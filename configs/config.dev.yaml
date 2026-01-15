@@ -1,0 +1,31 @@
+timezone: Asia/Taipei
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password: ""
+  db: 0
+
+tempo:
+  url: http://192.168.4.138:3200
+  auth_token: ""
+
+stats:
+  factor: 2.0
+  k: 10
+  min_samples: 30
+  mad_epsilon: 1ms
+
+polling:
+  tempo_interval: 15s
+  tempo_lookback: 120s
+  baseline_interval: 30s
+
+window_size: 1000
+
+dedup:
+  ttl: 6h
+
+http:
+  port: 8080
+  timeout: 15s

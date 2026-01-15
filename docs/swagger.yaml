@@ -1,0 +1,233 @@
+basePath: /
+definitions:
+  domain.AnomalyCheckRequest:
+    properties:
+      durationMs:
+        example: 250
+        type: integer
+      endpoint:
+        example: GET /actuator/health
+        type: string
+      service:
+        example: twdiw-customer-service-prod
+        type: string
+      timestampNano:
+        example: 1673000000000000000
+        type: integer
+    type: object
+  domain.AnomalyCheckResponse:
+    properties:
+      baseline:
+        $ref: '#/definitions/domain.BaselineStats'
+      bucket:
+        $ref: '#/definitions/domain.TimeBucket'
+      explanation:
+        example: duration 250ms within threshold 1124.00ms
+        type: string
+      isAnomaly:
+        example: false
+        type: boolean
+    type: object
+  domain.BaselineStats:
+    properties:
+      mad:
+        example: 43
+        type: number
+      p50:
+        example: 233.5
+        type: number
+      p95:
+        example: 562
+        type: number
+      sampleCount:
+        example: 50
+        type: integer
+      updatedAt:
+        example: "2026-01-15T08:00:00Z"
+        type: string
+    type: object
+  domain.TimeBucket:
+    properties:
+      dayType:
+        description: '"weekday" or "weekend"'
+        example: weekday
+        type: string
+      hour:
+        description: 0-23
+        example: 16
+        type: integer
+    type: object
+  handlers.HealthResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  store.Baseline:
+    properties:
+      mad:
+        example: 43
+        type: number
+      p50:
+        example: 233.5
+        type: number
+      p95:
+        example: 562
+        type: number
+      sampleCount:
+        example: 50
+        type: integer
+      updatedAt:
+        example: "2026-01-15T08:00:00Z"
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: |-
+    Time-Aware API Latency Anomaly Detection Service based on Grafana Tempo traces
+
+    This service provides real-time latency anomaly detection using statistical methods (P50, P95, MAD).
+    It automatically ingests traces from Tempo and maintains time-bucketed baselines per (service, endpoint, hour, dayType).
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Tempo Latency Anomaly Detection Service API
+  version: "1.0"
+paths:
+  /healthz:
+    get:
+      consumes:
+      - application/json
+      description: Check if the service is running and healthy
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.HealthResponse'
+      summary: Health check
+      tags:
+      - Health
+  /v1/anomaly/check:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Evaluate if a given request latency is anomalous based on historical baselines
+        The service uses time-bucketed baselines (per hour and day type) and statistical methods (P50, P95, MAD) to detect anomalies
+      parameters:
+      - description: Anomaly check request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.AnomalyCheckRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.AnomalyCheckResponse'
+        "400":
+          description: Invalid JSON
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Service not available
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Check for latency anomaly
+      tags:
+      - Anomaly Detection
+  /v1/baseline:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Retrieve baseline statistics (P50, P95, MAD) for a specific service, endpoint, hour, and day type
+        Used for debugging and monitoring baseline data
+      parameters:
+      - description: Service name
+        example: '"twdiw-customer-service-prod"'
+        in: query
+        name: service
+        required: true
+        type: string
+      - description: Endpoint name
+        example: '"GET /actuator/health"'
+        in: query
+        name: endpoint
+        required: true
+        type: string
+      - description: Hour of day (0-23)
+        example: 16
+        in: query
+        name: hour
+        required: true
+        type: integer
+      - description: Day type (weekday or weekend)
+        example: '"weekday"'
+        in: query
+        name: dayType
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Baseline'
+        "400":
+          description: Invalid parameters
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Baseline not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Store not available
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get baseline statistics
+      tags:
+      - Baseline
+schemes:
+- http
+- https
+swagger: "2.0"
+tags:
+- description: Health check endpoints
+  name: Health
+- description: Anomaly detection and evaluation endpoints
+  name: Anomaly Detection
+- description: Baseline statistics query endpoints
+  name: Baseline

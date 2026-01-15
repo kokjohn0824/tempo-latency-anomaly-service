@@ -1,0 +1,22 @@
+# Build and VCS
+.git
+.gocache
+.gitignore
+
+# Binaries
+bin/
+dist/
+out/
+
+# Editor/OS
+.DS_Store
+.idea
+.vscode
+
+# Docker
+**/.dockerignore
+**/Dockerfile*
+
+# Module cache (let docker use its own cache layer)
+vendor/
+

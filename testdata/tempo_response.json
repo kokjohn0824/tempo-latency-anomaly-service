@@ -1,0 +1,18 @@
+{
+  "traces": [
+    {
+      "traceID": "5f3b8b0c1a2d4e6f9a0b1c2d3e4f5678",
+      "rootServiceName": "api-gateway",
+      "rootSpanName": "/users/profile",
+      "startTimeUnixNano": "1736928000000000000",
+      "durationMs": 220
+    },
+    {
+      "traceID": "1a2b3c4d5e6f70819283746556473829",
+      "rootServiceName": "payment-service",
+      "rootSpanName": "/charge",
+      "startTimeUnixNano": "1736931600000000000",
+      "durationMs": 900
+    }
+  ]
+}

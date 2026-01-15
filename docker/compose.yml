@@ -1,0 +1,56 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: tempo-anomaly-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: tempo-anomaly-service
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      # tempo:
+      #   condition: service_started
+    environment:
+      # Config via env (overrides config file)
+      CONFIG_FILE: /config/config.dev.yaml
+      TZ: Asia/Taipei
+      TIMEZONE: Asia/Taipei
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      TEMPO_URL: http://192.168.4.138:3200
+      HTTP_PORT: 8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../configs:/config:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # Optional: Local Tempo for testing
+  # tempo:
+  #   image: grafana/tempo:2.5.0
+  #   container_name: tempo
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3200:3200"
+  #   command: ["-config.file=/etc/tempo.yaml"]
+  #   volumes:
+  #     - ../testdata/tempo-local.yaml:/etc/tempo.yaml:ro
