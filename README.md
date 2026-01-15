@@ -29,6 +29,26 @@ Metrics (basic Prometheus format): `GET /metrics`
 
 **Swagger UI**: `http://localhost:8080/swagger/index.html` - 互動式 API 文檔和測試介面
 
+## 📚 文檔導覽
+
+### 快速開始
+- **新使用者**: 請先閱讀本 README,然後查看 [EXAMPLES.md](EXAMPLES.md)
+- **API 測試**: 訪問 [Swagger UI](http://localhost:8080/swagger/index.html)
+- **完整導覽**: 參考 [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)
+
+### 主要文檔
+
+| 文檔 | 說明 |
+|------|------|
+| [README.md](README.md) | 專案介紹、快速開始、配置 (本文檔) |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | 系統架構設計與資料流程 |
+| [EXAMPLES.md](EXAMPLES.md) | 完整使用範例與測試場景 |
+| [docs/api/](docs/api/) | API 文檔與 Swagger 指南 |
+| [docs/design/](docs/design/) | 功能設計文檔 (如 Fallback 策略) |
+| [docs/reports/](docs/reports/) | 測試報告與實作總結 |
+
+**💡 提示**: 查看 [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) 了解完整文檔結構和快速查找指南。
+
 ## Configuration
 
 Config file example (`configs/config.example.yaml`):
