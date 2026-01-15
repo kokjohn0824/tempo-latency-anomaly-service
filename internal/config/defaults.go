@@ -29,6 +29,16 @@ var (
     // HTTP defaults
     DefaultHTTPPort    = 8080
     DefaultHTTPTimeout = 15 * time.Second
+
+    // Fallback defaults
+    DefaultFallbackEnabled                 = true
+    DefaultFallbackNearbyHoursEnabled      = true
+    DefaultFallbackNearbyHoursRange        = 2
+    DefaultFallbackNearbyMinSamples        = 20
+    DefaultFallbackDayTypeGlobalEnabled    = true
+    DefaultFallbackDayTypeGlobalMinSamples = 50
+    DefaultFallbackFullGlobalEnabled       = true
+    DefaultFallbackFullGlobalMinSamples    = 30
 )
 
 // setDefaults registers all default values on the provided viper instance.
@@ -58,5 +68,14 @@ func setDefaults(v *viper.Viper) {
 
     v.SetDefault("http.port", DefaultHTTPPort)
     v.SetDefault("http.timeout", DefaultHTTPTimeout.String())
+
+    v.SetDefault("fallback.enabled", DefaultFallbackEnabled)
+    v.SetDefault("fallback.nearby_hours_enabled", DefaultFallbackNearbyHoursEnabled)
+    v.SetDefault("fallback.nearby_hours_range", DefaultFallbackNearbyHoursRange)
+    v.SetDefault("fallback.nearby_min_samples", DefaultFallbackNearbyMinSamples)
+    v.SetDefault("fallback.daytype_global_enabled", DefaultFallbackDayTypeGlobalEnabled)
+    v.SetDefault("fallback.daytype_global_min_samples", DefaultFallbackDayTypeGlobalMinSamples)
+    v.SetDefault("fallback.full_global_enabled", DefaultFallbackFullGlobalEnabled)
+    v.SetDefault("fallback.full_global_min_samples", DefaultFallbackFullGlobalMinSamples)
 }
 

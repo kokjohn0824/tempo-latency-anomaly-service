@@ -11,14 +11,15 @@ import (
 
 // Config represents the full application configuration.
 type Config struct {
-    Timezone     string        `mapstructure:"timezone" yaml:"timezone"`
-    Redis        RedisConfig   `mapstructure:"redis" yaml:"redis"`
-    Tempo        TempoConfig   `mapstructure:"tempo" yaml:"tempo"`
-    Stats        StatsConfig   `mapstructure:"stats" yaml:"stats"`
-    Polling      PollingConfig `mapstructure:"polling" yaml:"polling"`
-    WindowSize   int           `mapstructure:"window_size" yaml:"window_size"`
-    Dedup        DedupConfig   `mapstructure:"dedup" yaml:"dedup"`
-    HTTP         HTTPConfig    `mapstructure:"http" yaml:"http"`
+    Timezone     string         `mapstructure:"timezone" yaml:"timezone"`
+    Redis        RedisConfig    `mapstructure:"redis" yaml:"redis"`
+    Tempo        TempoConfig    `mapstructure:"tempo" yaml:"tempo"`
+    Stats        StatsConfig    `mapstructure:"stats" yaml:"stats"`
+    Polling      PollingConfig  `mapstructure:"polling" yaml:"polling"`
+    WindowSize   int            `mapstructure:"window_size" yaml:"window_size"`
+    Dedup        DedupConfig    `mapstructure:"dedup" yaml:"dedup"`
+    HTTP         HTTPConfig     `mapstructure:"http" yaml:"http"`
+    Fallback     FallbackConfig `mapstructure:"fallback" yaml:"fallback"`
 }
 
 type RedisConfig struct {
@@ -53,6 +54,17 @@ type DedupConfig struct {
 type HTTPConfig struct {
     Port    int           `mapstructure:"port" yaml:"port"`
     Timeout time.Duration `mapstructure:"timeout" yaml:"timeout"`
+}
+
+type FallbackConfig struct {
+    Enabled                  bool `mapstructure:"enabled" yaml:"enabled"`
+    NearbyHoursEnabled       bool `mapstructure:"nearby_hours_enabled" yaml:"nearby_hours_enabled"`
+    NearbyHoursRange         int  `mapstructure:"nearby_hours_range" yaml:"nearby_hours_range"`
+    NearbyMinSamples         int  `mapstructure:"nearby_min_samples" yaml:"nearby_min_samples"`
+    DayTypeGlobalEnabled     bool `mapstructure:"daytype_global_enabled" yaml:"daytype_global_enabled"`
+    DayTypeGlobalMinSamples  int  `mapstructure:"daytype_global_min_samples" yaml:"daytype_global_min_samples"`
+    FullGlobalEnabled        bool `mapstructure:"full_global_enabled" yaml:"full_global_enabled"`
+    FullGlobalMinSamples     int  `mapstructure:"full_global_min_samples" yaml:"full_global_min_samples"`
 }
 
 // Load reads configuration from a YAML file (if provided) and environment variables.

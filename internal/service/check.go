@@ -11,16 +11,17 @@ import (
 
 // Check service evaluates whether a given request is anomalous based on cached baselines.
 type Check struct {
-    store store.Store
-    cfg   *config.Config
+    store          store.Store
+    cfg            *config.Config
+    baselineLookup *BaselineLookup
 }
 
-func NewCheck(store store.Store, cfg *config.Config) *Check {
-    return &Check{store: store, cfg: cfg}
+func NewCheck(store store.Store, cfg *config.Config, baselineLookup *BaselineLookup) *Check {
+    return &Check{store: store, cfg: cfg, baselineLookup: baselineLookup}
 }
 
 func (s *Check) Evaluate(ctx context.Context, req domain.AnomalyCheckRequest) (domain.AnomalyCheckResponse, error) {
-    if s == nil || s.store == nil || s.cfg == nil {
+    if s == nil || s.store == nil || s.cfg == nil || s.baselineLookup == nil {
         return domain.AnomalyCheckResponse{}, fmt.Errorf("check service not initialized")
     }
 
@@ -31,14 +32,24 @@ func (s *Check) Evaluate(ctx context.Context, req domain.AnomalyCheckRequest) (d
         return domain.AnomalyCheckResponse{}, fmt.Errorf("parse time bucket: %w", err)
     }
 
-    baseKey := domain.MakeBaselineKey(req.Service, req.Endpoint, bucket)
-    b, err := s.store.GetBaseline(ctx, baseKey)
+    // Use BaselineLookup with fallback strategy
+    res, err := s.baselineLookup.LookupWithFallback(ctx, req.Service, req.Endpoint, bucket)
     if err != nil {
-        return domain.AnomalyCheckResponse{}, fmt.Errorf("get baseline: %w", err)
+        return domain.AnomalyCheckResponse{}, fmt.Errorf("lookup baseline: %w", err)
+    }
+    var b *store.Baseline
+    if res != nil {
+        b = res.Baseline
     }
 
     // Prepare response scaffolding
     resp := domain.AnomalyCheckResponse{Bucket: bucket}
+    if res != nil {
+        resp.BaselineSource = res.Source
+        resp.FallbackLevel = res.FallbackLevel
+        resp.SourceDetails = res.SourceDetails
+        resp.CannotDetermine = res.CannotDetermine
+    }
     if b != nil {
         resp.Baseline = &domain.BaselineStats{
             P50:         b.P50,
@@ -98,4 +109,3 @@ func ternary[T any](cond bool, a, b T) T {
     }
     return b
 }
-

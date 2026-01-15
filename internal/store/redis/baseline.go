@@ -5,6 +5,8 @@ import (
     "strconv"
     "time"
 
+    goRedis "github.com/redis/go-redis/v9"
+
     "github.com/alexchang/tempo-latency-anomaly-service/internal/store"
 )
 
@@ -80,3 +82,69 @@ func (c *Client) SetBaseline(ctx context.Context, key string, b store.Baseline) 
     return c.rdb.HSet(ctx, key, fields).Err()
 }
 
+// GetBaselines reads multiple baseline hashes using a Redis pipeline for efficiency.
+// Returns a map for keys that exist (missing keys are omitted).
+func (c *Client) GetBaselines(ctx context.Context, keys []string) (map[string]*store.Baseline, error) {
+    if len(keys) == 0 {
+        return map[string]*store.Baseline{}, nil
+    }
+
+    pipe := c.rdb.Pipeline()
+    cmds := make([]*goRedis.MapStringStringCmd, len(keys))
+
+    // Queue HGETALL for each key in the pipeline
+    for i, k := range keys {
+        cmds[i] = pipe.HGetAll(ctx, k)
+    }
+
+    if _, err := pipe.Exec(ctx); err != nil {
+        return nil, err
+    }
+
+    out := make(map[string]*store.Baseline, len(keys))
+    for i, k := range keys {
+        m, err := cmds[i].Result()
+        if err != nil {
+            // If a specific command errors, return the error for visibility.
+            return nil, err
+        }
+        if len(m) == 0 {
+            continue
+        }
+
+        parseFloat := func(field string) float64 {
+            if v, ok := m[field]; ok {
+                if f, err := strconv.ParseFloat(v, 64); err == nil {
+                    return f
+                }
+            }
+            return 0
+        }
+        parseInt := func(field string) int {
+            if v, ok := m[field]; ok {
+                if n, err := strconv.Atoi(v); err == nil {
+                    return n
+                }
+            }
+            return 0
+        }
+        parseTime := func(field string) time.Time {
+            if v, ok := m[field]; ok {
+                if t, err := time.Parse(timeLayout, v); err == nil {
+                    return t
+                }
+            }
+            return time.Time{}
+        }
+
+        out[k] = &store.Baseline{
+            P50:         parseFloat(fieldP50),
+            P95:         parseFloat(fieldP95),
+            MAD:         parseFloat(fieldMAD),
+            SampleCount: parseInt(fieldSampleCount),
+            UpdatedAt:   parseTime(fieldUpdatedAt),
+        }
+    }
+
+    return out, nil
+}

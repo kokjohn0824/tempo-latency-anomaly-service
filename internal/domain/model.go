@@ -35,12 +35,27 @@ type AnomalyCheckRequest struct {
     DurationMs    int64  `json:"durationMs" example:"250"`
 }
 
+// BaselineSource indicates which fallback level was used to obtain the baseline.
+type BaselineSource string
+
+const (
+    SourceExact       BaselineSource = "exact"        // Level 1: Exact hour|dayType match
+    SourceNearby      BaselineSource = "nearby"       // Level 2: Nearby hours (±1, ±2)
+    SourceDayType     BaselineSource = "daytype"      // Level 3: All hours of same day type
+    SourceGlobal      BaselineSource = "global"       // Level 4: All data (any hour, any day type)
+    SourceUnavailable BaselineSource = "unavailable"  // Level 5: No data available
+)
+
 // AnomalyCheckResponse is the output with decision and explanation.
 type AnomalyCheckResponse struct {
-    IsAnomaly   bool            `json:"isAnomaly" example:"false"`
-    Bucket      TimeBucket      `json:"bucket"`
-    Baseline    *BaselineStats  `json:"baseline,omitempty"`
-    Explanation string          `json:"explanation" example:"duration 250ms within threshold 1124.00ms"`
+    IsAnomaly        bool            `json:"isAnomaly" example:"false"`
+    CannotDetermine  bool            `json:"cannotDetermine,omitempty" example:"false"`
+    Bucket           TimeBucket      `json:"bucket"`
+    Baseline         *BaselineStats  `json:"baseline,omitempty"`
+    BaselineSource   BaselineSource  `json:"baselineSource" example:"exact"`
+    FallbackLevel    int             `json:"fallbackLevel,omitempty" example:"1"`
+    SourceDetails    string          `json:"sourceDetails,omitempty" example:"exact match: 17|weekday"`
+    Explanation      string          `json:"explanation" example:"duration 250ms within threshold 1124.00ms"`
 }
 
 // ServiceEndpoint represents a service and endpoint pair with available baselines.

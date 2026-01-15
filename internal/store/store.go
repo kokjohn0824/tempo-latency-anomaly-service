@@ -29,6 +29,9 @@ type BaselineOps interface {
     GetBaseline(ctx context.Context, key string) (*Baseline, error)
     // SetBaseline stores baseline stats (including SampleCount and UpdatedAt).
     SetBaseline(ctx context.Context, key string, b Baseline) error
+    // GetBaselines fetches baseline stats for multiple keys in one call.
+    // Returns a map of key -> Baseline for keys that exist. Missing keys are omitted.
+    GetBaselines(ctx context.Context, keys []string) (map[string]*Baseline, error)
 }
 
 // DedupOps defines trace ID deduplication (seen:* keys).
@@ -62,4 +65,3 @@ type Store interface {
     ListOps
     Close() error
 }
-

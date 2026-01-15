@@ -47,7 +47,7 @@ const docTemplate = `{
         },
         "/v1/anomaly/check": {
             "post": {
-                "description": "Evaluate if a given request latency is anomalous based on historical baselines\nThe service uses time-bucketed baselines (per hour and day type) and statistical methods (P50, P95, MAD) to detect anomalies",
+                "description": "Evaluate if a given request latency is anomalous based on historical baselines\nThe service uses time-bucketed baselines (per hour and day type) and statistical methods (P50, P95, MAD) to detect anomalies\nFallback: Automatically applies a 5-level strategy to select a baseline\n(exact → nearby → daytype → global → unavailable) when the exact bucket has insufficient data.\nResponse fields:\n- baselineSource: which source was used (exact/nearby/daytype/global/unavailable)\n- fallbackLevel: numeric level 1-5 mapping to the source (1=exact, 2=nearby, 3=daytype, 4=global, 5=unavailable)\n- sourceDetails: human-readable details about the selected source (e.g. \"exact match: 17|weekday\")\n- cannotDetermine: true if no sufficient baseline exists to decide",
                 "consumes": [
                     "application/json"
                 ],
@@ -71,7 +71,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Includes baselineSource, fallbackLevel, sourceDetails, cannotDetermine",
                         "schema": {
                             "$ref": "#/definitions/domain.AnomalyCheckResponse"
                         }
@@ -269,16 +269,36 @@ const docTemplate = `{
                 "baseline": {
                     "$ref": "#/definitions/domain.BaselineStats"
                 },
+                "baselineSource": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/domain.BaselineSource"
+                        }
+                    ],
+                    "example": "exact"
+                },
                 "bucket": {
                     "$ref": "#/definitions/domain.TimeBucket"
+                },
+                "cannotDetermine": {
+                    "type": "boolean",
+                    "example": false
                 },
                 "explanation": {
                     "type": "string",
                     "example": "duration 250ms within threshold 1124.00ms"
                 },
+                "fallbackLevel": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "isAnomaly": {
                     "type": "boolean",
                     "example": false
+                },
+                "sourceDetails": {
+                    "type": "string",
+                    "example": "exact match: 17|weekday"
                 }
             }
         },
@@ -300,6 +320,37 @@ const docTemplate = `{
                     "example": 3
                 }
             }
+        },
+        "domain.BaselineSource": {
+            "type": "string",
+            "enum": [
+                "exact",
+                "nearby",
+                "daytype",
+                "global",
+                "unavailable"
+            ],
+            "x-enum-comments": {
+                "SourceDayType": "Level 3: All hours of same day type",
+                "SourceExact": "Level 1: Exact hour|dayType match",
+                "SourceGlobal": "Level 4: All data (any hour, any day type)",
+                "SourceNearby": "Level 2: Nearby hours (±1, ±2)",
+                "SourceUnavailable": "Level 5: No data available"
+            },
+            "x-enum-descriptions": [
+                "Level 1: Exact hour|dayType match",
+                "Level 2: Nearby hours (±1, ±2)",
+                "Level 3: All hours of same day type",
+                "Level 4: All data (any hour, any day type)",
+                "Level 5: No data available"
+            ],
+            "x-enum-varnames": [
+                "SourceExact",
+                "SourceNearby",
+                "SourceDayType",
+                "SourceGlobal",
+                "SourceUnavailable"
+            ]
         },
         "domain.BaselineStats": {
             "type": "object",

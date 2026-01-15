@@ -29,3 +29,13 @@ dedup:
 http:
   port: 8080
   timeout: 15s
+
+fallback:
+  enabled: true
+  nearby_hours_enabled: true
+  nearby_hours_range: 2
+  nearby_min_samples: 20
+  daytype_global_enabled: true
+  daytype_global_min_samples: 50
+  full_global_enabled: true
+  full_global_min_samples: 30

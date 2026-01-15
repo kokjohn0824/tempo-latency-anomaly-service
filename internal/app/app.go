@@ -49,7 +49,8 @@ func New(cfg *config.Config) (*App, error) {
     // Services
     ingestSvc := service.NewIngest(st, cfg)
     baselineSvc := service.NewBaseline(st, cfg)
-    checkSvc := service.NewCheck(st, cfg)
+    baselineLookup := service.NewBaselineLookup(st, cfg)
+    checkSvc := service.NewCheck(st, cfg, baselineLookup)
     listAvailSvc := service.NewListAvailable(st, cfg.Stats.MinSamples)
 
     // Jobs
@@ -87,4 +88,3 @@ func New(cfg *config.Config) (*App, error) {
         HTTPServer:  srv,
     }, nil
 }
-

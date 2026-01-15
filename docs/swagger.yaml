@@ -19,14 +19,27 @@ definitions:
     properties:
       baseline:
         $ref: '#/definitions/domain.BaselineStats'
+      baselineSource:
+        allOf:
+        - $ref: '#/definitions/domain.BaselineSource'
+        example: exact
       bucket:
         $ref: '#/definitions/domain.TimeBucket'
+      cannotDetermine:
+        example: false
+        type: boolean
       explanation:
         example: duration 250ms within threshold 1124.00ms
         type: string
+      fallbackLevel:
+        example: 1
+        type: integer
       isAnomaly:
         example: false
         type: boolean
+      sourceDetails:
+        example: 'exact match: 17|weekday'
+        type: string
     type: object
   domain.AvailableServicesResponse:
     properties:
@@ -41,6 +54,32 @@ definitions:
         example: 3
         type: integer
     type: object
+  domain.BaselineSource:
+    enum:
+    - exact
+    - nearby
+    - daytype
+    - global
+    - unavailable
+    type: string
+    x-enum-comments:
+      SourceDayType: 'Level 3: All hours of same day type'
+      SourceExact: 'Level 1: Exact hour|dayType match'
+      SourceGlobal: 'Level 4: All data (any hour, any day type)'
+      SourceNearby: 'Level 2: Nearby hours (±1, ±2)'
+      SourceUnavailable: 'Level 5: No data available'
+    x-enum-descriptions:
+    - 'Level 1: Exact hour|dayType match'
+    - 'Level 2: Nearby hours (±1, ±2)'
+    - 'Level 3: All hours of same day type'
+    - 'Level 4: All data (any hour, any day type)'
+    - 'Level 5: No data available'
+    x-enum-varnames:
+    - SourceExact
+    - SourceNearby
+    - SourceDayType
+    - SourceGlobal
+    - SourceUnavailable
   domain.BaselineStats:
     properties:
       mad:
@@ -148,6 +187,13 @@ paths:
       description: |-
         Evaluate if a given request latency is anomalous based on historical baselines
         The service uses time-bucketed baselines (per hour and day type) and statistical methods (P50, P95, MAD) to detect anomalies
+        Fallback: Automatically applies a 5-level strategy to select a baseline
+        (exact → nearby → daytype → global → unavailable) when the exact bucket has insufficient data.
+        Response fields:
+        - baselineSource: which source was used (exact/nearby/daytype/global/unavailable)
+        - fallbackLevel: numeric level 1-5 mapping to the source (1=exact, 2=nearby, 3=daytype, 4=global, 5=unavailable)
+        - sourceDetails: human-readable details about the selected source (e.g. "exact match: 17|weekday")
+        - cannotDetermine: true if no sufficient baseline exists to decide
       parameters:
       - description: Anomaly check request
         in: body
@@ -159,7 +205,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Includes baselineSource, fallbackLevel, sourceDetails, cannotDetermine
           schema:
             $ref: '#/definitions/domain.AnomalyCheckResponse'
         "400":
