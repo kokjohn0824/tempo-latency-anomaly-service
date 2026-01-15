@@ -43,3 +43,17 @@ type AnomalyCheckResponse struct {
     Explanation string          `json:"explanation" example:"duration 250ms within threshold 1124.00ms"`
 }
 
+// ServiceEndpoint represents a service and endpoint pair with available baselines.
+type ServiceEndpoint struct {
+    Service   string   `json:"service" example:"twdiw-customer-service-prod"`
+    Endpoint  string   `json:"endpoint" example:"GET /actuator/health"`
+    Buckets   []string `json:"buckets" example:"16|weekday,17|weekday"`
+}
+
+// AvailableServicesResponse is the output for listing available services and endpoints.
+type AvailableServicesResponse struct {
+    TotalServices  int               `json:"totalServices" example:"3"`
+    TotalEndpoints int               `json:"totalEndpoints" example:"15"`
+    Services       []ServiceEndpoint `json:"services"`
+}
+

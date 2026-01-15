@@ -28,6 +28,19 @@ definitions:
         example: false
         type: boolean
     type: object
+  domain.AvailableServicesResponse:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/domain.ServiceEndpoint'
+        type: array
+      totalEndpoints:
+        example: 15
+        type: integer
+      totalServices:
+        example: 3
+        type: integer
+    type: object
   domain.BaselineStats:
     properties:
       mad:
@@ -44,6 +57,22 @@ definitions:
         type: integer
       updatedAt:
         example: "2026-01-15T08:00:00Z"
+        type: string
+    type: object
+  domain.ServiceEndpoint:
+    properties:
+      buckets:
+        example:
+        - 16|weekday
+        - 17|weekday
+        items:
+          type: string
+        type: array
+      endpoint:
+        example: GET /actuator/health
+        type: string
+      service:
+        example: twdiw-customer-service-prod
         type: string
     type: object
   domain.TimeBucket:
@@ -154,6 +183,36 @@ paths:
       summary: Check for latency anomaly
       tags:
       - Anomaly Detection
+  /v1/available:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Retrieve all services and endpoints that have sufficient baseline samples for anomaly detection
+        Returns a list of service/endpoint pairs grouped by service, along with their available time buckets
+        Only includes baselines with sufficient samples (configured via min_samples)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.AvailableServicesResponse'
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Service not available
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List available services and endpoints
+      tags:
+      - Available Services
   /v1/baseline:
     get:
       consumes:
@@ -231,3 +290,5 @@ tags:
   name: Anomaly Detection
 - description: Baseline statistics query endpoints
   name: Baseline
+- description: Query available services and endpoints with sufficient baseline data
+  name: Available Services

@@ -22,6 +22,7 @@ type App struct {
     Ingest       *service.Ingest
     Baseline     *service.Baseline
     Check        *service.Check
+    ListAvail    *service.ListAvailable
     TempoPoller  *jobs.TempoPoller
     BaselineJob  *jobs.BaselineRecompute
     HTTPServer   *http.Server
@@ -49,13 +50,14 @@ func New(cfg *config.Config) (*App, error) {
     ingestSvc := service.NewIngest(st, cfg)
     baselineSvc := service.NewBaseline(st, cfg)
     checkSvc := service.NewCheck(st, cfg)
+    listAvailSvc := service.NewListAvailable(st, cfg.Stats.MinSamples)
 
     // Jobs
     poller := jobs.NewTempoPoller(cfg, tempoClient, ingestSvc)
     recompute := jobs.NewBaselineRecompute(cfg, baselineSvc, st, 100)
 
     // HTTP router and server
-    apiHandler := api.NewRouter(checkSvc, st)
+    apiHandler := api.NewRouter(checkSvc, listAvailSvc, st)
 
     mux := http.NewServeMux()
     // Mount API under root
@@ -79,6 +81,7 @@ func New(cfg *config.Config) (*App, error) {
         Ingest:      ingestSvc,
         Baseline:    baselineSvc,
         Check:       checkSvc,
+        ListAvail:   listAvailSvc,
         TempoPoller: poller,
         BaselineJob: recompute,
         HTTPServer:  srv,

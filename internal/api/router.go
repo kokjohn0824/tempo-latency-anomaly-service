@@ -13,7 +13,7 @@ import (
 )
 
 // NewRouter builds an http.Handler with routes and middleware wired.
-func NewRouter(checkSvc *service.Check, st store.Store) http.Handler {
+func NewRouter(checkSvc *service.Check, listSvc *service.ListAvailable, st store.Store) http.Handler {
     mux := http.NewServeMux()
 
     mux.HandleFunc("/healthz", handlers.Healthz)
@@ -32,6 +32,14 @@ func NewRouter(checkSvc *service.Check, st store.Store) http.Handler {
             return
         }
         handlers.Baseline(st).ServeHTTP(w, r)
+    })
+
+    mux.HandleFunc("/v1/available", func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != http.MethodGet {
+            w.WriteHeader(http.StatusMethodNotAllowed)
+            return
+        }
+        handlers.ListAvailable(listSvc).ServeHTTP(w, r)
     })
 
     // Swagger UI endpoint

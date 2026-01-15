@@ -106,6 +106,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/available": {
+            "get": {
+                "description": "Retrieve all services and endpoints that have sufficient baseline samples for anomaly detection\nReturns a list of service/endpoint pairs grouped by service, along with their available time buckets\nOnly includes baselines with sufficient samples (configured via min_samples)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Available Services"
+                ],
+                "summary": "List available services and endpoints",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.AvailableServicesResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Service not available",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/v1/baseline": {
             "get": {
                 "description": "Retrieve baseline statistics (P50, P95, MAD) for a specific service, endpoint, hour, and day type\nUsed for debugging and monitoring baseline data",
@@ -241,6 +282,25 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.AvailableServicesResponse": {
+            "type": "object",
+            "properties": {
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.ServiceEndpoint"
+                    }
+                },
+                "totalEndpoints": {
+                    "type": "integer",
+                    "example": 15
+                },
+                "totalServices": {
+                    "type": "integer",
+                    "example": 3
+                }
+            }
+        },
         "domain.BaselineStats": {
             "type": "object",
             "properties": {
@@ -263,6 +323,29 @@ const docTemplate = `{
                 "updatedAt": {
                     "type": "string",
                     "example": "2026-01-15T08:00:00Z"
+                }
+            }
+        },
+        "domain.ServiceEndpoint": {
+            "type": "object",
+            "properties": {
+                "buckets": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "16|weekday",
+                        "17|weekday"
+                    ]
+                },
+                "endpoint": {
+                    "type": "string",
+                    "example": "GET /actuator/health"
+                },
+                "service": {
+                    "type": "string",
+                    "example": "twdiw-customer-service-prod"
                 }
             }
         },
@@ -328,6 +411,10 @@ const docTemplate = `{
         {
             "description": "Baseline statistics query endpoints",
             "name": "Baseline"
+        },
+        {
+            "description": "Query available services and endpoints with sufficient baseline data",
+            "name": "Available Services"
         }
     ]
 }`

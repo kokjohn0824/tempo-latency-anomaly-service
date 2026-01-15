@@ -126,6 +126,28 @@ You can also pass a config file path via `-config` flag or `CONFIG_FILE` env var
     ```
   - Response when missing: `404` with `{ "error": "not found" }`
 
+- GET `/v1/available`: List all services and endpoints with sufficient baseline data
+  - Response:
+    ```json
+    {
+      "totalServices": 3,
+      "totalEndpoints": 15,
+      "services": [
+        {
+          "service": "twdiw-customer-service-prod",
+          "endpoint": "GET /actuator/health",
+          "buckets": ["16|weekday", "17|weekday"]
+        },
+        {
+          "service": "CHT_aiops",
+          "endpoint": "OpenApiPmSchedule.pmDbSchedule",
+          "buckets": ["16|weekday"]
+        }
+      ]
+    }
+    ```
+  - Use this API to discover which services/endpoints are ready for anomaly detection
+
 ## Background Jobs
 
 - Tempo poller: every `polling.tempo_interval` (default 15s), queries last `polling.tempo_lookback` seconds (default 120s), deduplicates by traceID, stores durations, marks keys dirty.

@@ -46,12 +46,20 @@ type DirtyOps interface {
     PopDirtyBatch(ctx context.Context, count int64) ([]string, error)
 }
 
+// ListOps defines operations for listing available baselines.
+type ListOps interface {
+    // ListBaselineKeys returns all baseline keys matching the pattern (base:*).
+    // Returns keys that have sufficient samples for anomaly detection.
+    ListBaselineKeys(ctx context.Context, minSamples int) ([]string, error)
+}
+
 // Store aggregates all storage operations and allows closing resources.
 type Store interface {
     DurationOps
     BaselineOps
     DedupOps
     DirtyOps
+    ListOps
     Close() error
 }
 

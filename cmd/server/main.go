@@ -39,6 +39,9 @@ import (
 // @tag.name Baseline
 // @tag.description Baseline statistics query endpoints
 
+// @tag.name Available Services
+// @tag.description Query available services and endpoints with sufficient baseline data
+
 func main() {
     // Config path via flag or env CONFIG_FILE
     var cfgPath string
