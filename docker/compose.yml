@@ -13,6 +13,7 @@ services:
       start_period: 5s
 
   service:
+    image: tempo-latency-anomaly-service:latest
     build:
       context: ..
       dockerfile: docker/Dockerfile
