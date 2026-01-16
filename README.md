@@ -64,6 +64,27 @@ Metrics (basic Prometheus format): `GET /metrics`
 
 **Swagger UI**: `http://localhost:8080/swagger/index.html` - 互動式 API 文檔和測試介面
 
+## 🧪 Testing
+
+**在 Docker build 前自動執行單元測試**,確保沒有 breaking changes:
+
+```bash
+# 執行所有單元測試
+make test
+
+# 生成覆蓋率報告 (HTML)
+make test-coverage
+
+# 建置 Docker (自動執行測試)
+make docker-build
+```
+
+**測試覆蓋率**:
+- 核心業務邏輯: ~82% (stats, domain, service)
+- 總體覆蓋率: 33.1%
+
+詳見 [TESTING.md](TESTING.md) 完整測試文檔。
+
 ## 📚 文檔導覽
 
 ### 快速開始
