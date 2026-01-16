@@ -22,6 +22,11 @@ var (
     DefaultTempoInterval    = 15 * time.Second
     DefaultTempoLookback    = 120 * time.Second
     DefaultBaselineInterval = 30 * time.Second
+    
+    // Backfill defaults
+    DefaultBackfillEnabled  = true
+    DefaultBackfillDuration = 168 * time.Hour  // 7 days
+    DefaultBackfillBatch    = 1 * time.Hour
 
     // Dedup TTL default
     DefaultDedupTTL = 6 * time.Hour
@@ -61,6 +66,9 @@ func setDefaults(v *viper.Viper) {
     v.SetDefault("polling.tempo_interval", DefaultTempoInterval.String())
     v.SetDefault("polling.tempo_lookback", DefaultTempoLookback.String())
     v.SetDefault("polling.baseline_interval", DefaultBaselineInterval.String())
+    v.SetDefault("polling.backfill_enabled", DefaultBackfillEnabled)
+    v.SetDefault("polling.backfill_duration", DefaultBackfillDuration.String())
+    v.SetDefault("polling.backfill_batch", DefaultBackfillBatch.String())
 
     v.SetDefault("window_size", DefaultWindowSize)
 

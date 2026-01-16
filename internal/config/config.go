@@ -45,6 +45,9 @@ type PollingConfig struct {
     TempoInterval    time.Duration `mapstructure:"tempo_interval" yaml:"tempo_interval"`
     TempoLookback    time.Duration `mapstructure:"tempo_lookback" yaml:"tempo_lookback"`
     BaselineInterval time.Duration `mapstructure:"baseline_interval" yaml:"baseline_interval"`
+    BackfillEnabled  bool          `mapstructure:"backfill_enabled" yaml:"backfill_enabled"`
+    BackfillDuration time.Duration `mapstructure:"backfill_duration" yaml:"backfill_duration"`
+    BackfillBatch    time.Duration `mapstructure:"backfill_batch" yaml:"backfill_batch"`
 }
 
 type DedupConfig struct {

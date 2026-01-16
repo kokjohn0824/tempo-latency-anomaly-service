@@ -20,6 +20,11 @@ polling:
   tempo_interval: 15s
   tempo_lookback: 120s
   baseline_interval: 30s
+  
+  # Backfill configuration: Fill historical data on startup
+  backfill_enabled: true
+  backfill_duration: 168h    # Backfill 7 days of historical data
+  backfill_batch: 1h         # Query 1 hour per batch
 
 window_size: 1000
 

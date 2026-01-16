@@ -20,6 +20,11 @@ polling:
   tempo_interval: 15s
   tempo_lookback: 120s
   baseline_interval: 30s
+  
+  # Backfill 設定: 啟動時回填歷史資料
+  backfill_enabled: true
+  backfill_duration: 168h    # 回填 7 天歷史資料
+  backfill_batch: 1h         # 每批查詢 1 小時
 
 window_size: 1000
 

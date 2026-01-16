@@ -65,6 +65,52 @@
 └──────────────────────────────────────────────────────────────┘
 ```
 
+## 資料收集流程 (含 Backfill)
+
+啟動時先回填歷史資料,之後進入固定頻率的輪詢。回填結束時間會落在「現在 - tempo_lookback」,以降低與正常輪詢的重疊。
+
+```
+時間軸 (示意):
+
+[-backfill_duration] ──(逐批回填: backfill_batch)──> [現在 - tempo_lookback] ──(正常輪詢: tempo_interval)──> [現在]
+
+        ▲ Backfill 階段                                   ▲ 正常輪詢階段
+```
+
+流程圖:
+
+```
+┌───────────────────────────────┐
+│            啟動 Start         │
+└───────────────┬───────────────┘
+                │
+        backfill_enabled?
+                │yes                       no
+                ▼                          ▼
+┌───────────────────────────────┐   ┌─────────────────────────┐
+│ Backfill Loop (old → recent) │   │ 立即執行一次 tick()     │
+│  for t in [now-dur, now-lk): │   └───────────┬─────────────┘
+│    window = [t, t+batch)     │               │
+│    Query Tempo (lookback≈now-t)             ▼
+│    Filter to window           │   ┌─────────────────────────┐
+│    Ingest samples → Redis     │   │   Regular Polling Loop  │
+│    Sleep(1s) rate limit       │   │ every tempo_interval:   │
+└───────────────┬───────────────┘   │  Query last tempo_lookback
+                │                   │  Ingest samples → Redis
+                ▼                   └─────────────────────────┘
+      ┌────────────────┐
+      │ Backfill Done  │
+      └──────┬─────────┘
+             │
+             ▼
+   ┌─────────────────────────┐
+   │ 立即執行一次 tick()     │
+   └───────────┬─────────────┘
+               │
+               ▼
+     (進入 Regular Polling)
+```
+
 ---
 
 ## 資料流程

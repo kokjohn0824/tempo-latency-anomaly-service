@@ -7,6 +7,7 @@
 - [異常檢測](#異常檢測)
 - [查詢 Baseline](#查詢-baseline)
 - [測試情境](#測試情境)
+- [Backfill 日誌範例](#backfill-日誌範例)
 
 ---
 
@@ -461,6 +462,37 @@ func main() {
     }
 }
 ```
+
+---
+
+## Backfill 日誌範例
+
+以下為服務啟動後的回填(backfill)與正常輪詢的日誌片段,可用來觀察回填進度與是否接近 Tempo 查詢上限。
+
+```
+2026/01/15 10:00:00 tempo backfill: starting 2026-01-08T10:00:00Z to 2026-01-15T09:58:00Z (batch 1h)
+2026/01/15 10:00:00 tempo backfill: querying window 2026-01-08T10:00:00Z to 2026-01-08T11:00:00Z (lookback ~604800s)
+2026/01/15 10:00:02 tempo backfill: received 432 traces, filtered 427, ingested 427 for 2026-01-08T10:00:00Z to 2026-01-08T11:00:00Z
+2026/01/15 10:00:03 tempo backfill: querying window 2026-01-08T11:00:00Z to 2026-01-08T12:00:00Z (lookback ~604400s)
+2026/01/15 10:00:05 tempo backfill: received 498 traces, filtered 492, ingested 492 for 2026-01-08T11:00:00Z to 2026-01-08T12:00:00Z
+2026/01/15 10:00:05 tempo backfill WARNING: batch query results (498) close to limit (500). Consider increasing limit or reducing batch size.
+...
+2026/01/15 10:45:12 tempo backfill: completed
+
+# 回填完成後,立即執行一次輪詢並進入固定間隔輪詢
+2026/01/15 10:45:12 tempo poller: querying last 120 seconds
+2026/01/15 10:45:12 tempo poller: received 85 traces
+2026/01/15 10:45:13 tempo poller: ingested 85 traces
+
+# 輪詢期間若接近上限會有警告
+2026/01/15 10:50:27 tempo poller: querying last 120 seconds
+2026/01/15 10:50:27 tempo poller: received 471 traces
+2026/01/15 10:50:27 tempo poller WARNING: query results (471) close to limit (500). Consider increasing limit or reducing lookback to avoid drops.
+```
+
+提示:
+- 出現 `completed` 代表回填階段結束
+- 若經常出現 WARNING,可考慮「調整 `internal/tempo/client.go` 的 limit」或「縮小 `polling.backfill_batch`/`polling.tempo_lookback`」
 
 ---
 

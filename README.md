@@ -10,6 +10,41 @@ Key properties:
 
 See `ARCHITECTURE.md` for a detailed design and data flows.
 
+## Backfill (啟動回填機制)
+
+為了改善冷啟動時缺乏歷史資料的問題,服務在啟動時會先執行「Backfill 回填」,批次撈取指定期間內的 Tempo traces 並寫入樣本,待回填完成後再進入正常輪詢模式。
+
+- 啟動順序: Backfill → 立即輪詢一次 → 固定間隔輪詢
+- 回填期間: 由 `polling.backfill_duration` 控制(預設 7 天)
+- 批次大小: 由 `polling.backfill_batch` 控制(預設 1 小時/批)
+- 查詢窗口: 每批以「相對現在」的 lookback 查詢,並在應用層過濾到該批的時間窗
+
+配置參數 (加入到 `polling:` 區段):
+
+```
+polling:
+  backfill_enabled: true        # 是否啟用回填(預設 true)
+  backfill_duration: 168h       # 回填多久以前的資料(預設 7 天)
+  backfill_batch: 1h            # 每批查詢的時間範圍(預設 1 小時)
+```
+
+環境變數覆寫:
+- `POLLING_BACKFILL_ENABLED`
+- `POLLING_BACKFILL_DURATION`
+- `POLLING_BACKFILL_BATCH`
+
+運作流程:
+```
+[啟動] → Backfill 階段(由最舊→較新,逐批查詢) → 完成 → 正常輪詢(每 15s 查最近 120s)
+```
+
+查詢統計與警告:
+- 服務會在日誌中輸出每批「收到/過濾/寫入」的筆數,便於掌握進度
+- 若單批返回筆數接近 Tempo 查詢上限(目前 500),會輸出 WARNING,建議「調大 limit 或縮小批次時間」以避免遺漏
+- 正常輪詢同樣會記錄查詢筆數,並在接近上限時警告
+
+更多背景與設計考量,請見 `TEMPO_DATA_COLLECTION_ANALYSIS.md`。
+
 ## Quickstart
 
 - Prerequisites: Go 1.22+, Redis 7+, optional Tempo endpoint
@@ -93,6 +128,7 @@ Environment variables override file values (dot → underscore):
 - `TEMPO_URL`, `TEMPO_AUTH_TOKEN`
 - `STATS_FACTOR`, `STATS_K`, `STATS_MIN_SAMPLES`, `STATS_MAD_EPSILON`
 - `POLLING_TEMPO_INTERVAL`, `POLLING_TEMPO_LOOKBACK`, `POLLING_BASELINE_INTERVAL`
+- `POLLING_BACKFILL_ENABLED`, `POLLING_BACKFILL_DURATION`, `POLLING_BACKFILL_BATCH`
 - `WINDOW_SIZE`, `DEDUP_TTL`, `HTTP_PORT`, `HTTP_TIMEOUT`
 
 You can also pass a config file path via `-config` flag or `CONFIG_FILE` env var.

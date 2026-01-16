@@ -42,7 +42,7 @@ func (c *Client) QueryTraces(ctx context.Context, lookbackSeconds int) ([]domain
 
     endpoint := c.baseURL + "/api/search"
     params := BuildQueryParams(lookbackSeconds)
-    params.Set("limit", "100") // Limit results per query
+    params.Set("limit", "500") // Limit results per query (increased from 100 to 500)
 
     u, err := url.Parse(endpoint)
     if err != nil {
