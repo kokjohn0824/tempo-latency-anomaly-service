@@ -247,11 +247,11 @@ const docTemplate = `{
             "properties": {
                 "durationMs": {
                     "type": "integer",
-                    "example": 250
+                    "example": 5
                 },
                 "endpoint": {
                     "type": "string",
-                    "example": "GET /actuator/health"
+                    "example": "AiPromptSyncScheduler.syncAiPromptsToDify"
                 },
                 "service": {
                     "type": "string",
@@ -259,7 +259,7 @@ const docTemplate = `{
                 },
                 "timestampNano": {
                     "type": "integer",
-                    "example": 1673000000000000000
+                    "example": 1737000000000000000
                 }
             }
         },
@@ -286,7 +286,7 @@ const docTemplate = `{
                 },
                 "explanation": {
                     "type": "string",
-                    "example": "duration 250ms within threshold 1124.00ms"
+                    "example": "duration 5ms within threshold 2.00ms"
                 },
                 "fallbackLevel": {
                     "type": "integer",
@@ -298,7 +298,7 @@ const docTemplate = `{
                 },
                 "sourceDetails": {
                     "type": "string",
-                    "example": "exact match: 17|weekday"
+                    "example": "exact match: 9|weekday"
                 }
             }
         },
@@ -313,11 +313,11 @@ const docTemplate = `{
                 },
                 "totalEndpoints": {
                     "type": "integer",
-                    "example": 15
+                    "example": 17
                 },
                 "totalServices": {
                     "type": "integer",
-                    "example": 3
+                    "example": 4
                 }
             }
         },
@@ -357,23 +357,23 @@ const docTemplate = `{
             "properties": {
                 "mad": {
                     "type": "number",
-                    "example": 43
+                    "example": 0
                 },
                 "p50": {
                     "type": "number",
-                    "example": 233.5
+                    "example": 1
                 },
                 "p95": {
                     "type": "number",
-                    "example": 562
+                    "example": 2
                 },
                 "sampleCount": {
                     "type": "integer",
-                    "example": 50
+                    "example": 188
                 },
                 "updatedAt": {
                     "type": "string",
-                    "example": "2026-01-15T08:00:00Z"
+                    "example": "2026-01-16T02:00:00Z"
                 }
             }
         },
@@ -386,13 +386,18 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "example": [
-                        "16|weekday",
-                        "17|weekday"
+                        "6|weekday",
+                        "9|weekday",
+                        "10|weekday",
+                        "12|weekday",
+                        "13|weekend",
+                        "17|weekday",
+                        "20|weekday"
                     ]
                 },
                 "endpoint": {
                     "type": "string",
-                    "example": "GET /actuator/health"
+                    "example": "AiPromptSyncScheduler.syncAiPromptsToDify"
                 },
                 "service": {
                     "type": "string",
@@ -411,7 +416,7 @@ const docTemplate = `{
                 "hour": {
                     "description": "0-23",
                     "type": "integer",
-                    "example": 16
+                    "example": 9
                 }
             }
         },

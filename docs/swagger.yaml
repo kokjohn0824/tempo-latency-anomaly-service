@@ -3,16 +3,16 @@ definitions:
   domain.AnomalyCheckRequest:
     properties:
       durationMs:
-        example: 250
+        example: 5
         type: integer
       endpoint:
-        example: GET /actuator/health
+        example: AiPromptSyncScheduler.syncAiPromptsToDify
         type: string
       service:
         example: twdiw-customer-service-prod
         type: string
       timestampNano:
-        example: 1673000000000000000
+        example: 1737000000000000000
         type: integer
     type: object
   domain.AnomalyCheckResponse:
@@ -29,7 +29,7 @@ definitions:
         example: false
         type: boolean
       explanation:
-        example: duration 250ms within threshold 1124.00ms
+        example: duration 5ms within threshold 2.00ms
         type: string
       fallbackLevel:
         example: 1
@@ -38,7 +38,7 @@ definitions:
         example: false
         type: boolean
       sourceDetails:
-        example: 'exact match: 17|weekday'
+        example: 'exact match: 9|weekday'
         type: string
     type: object
   domain.AvailableServicesResponse:
@@ -48,10 +48,10 @@ definitions:
           $ref: '#/definitions/domain.ServiceEndpoint'
         type: array
       totalEndpoints:
-        example: 15
+        example: 17
         type: integer
       totalServices:
-        example: 3
+        example: 4
         type: integer
     type: object
   domain.BaselineSource:
@@ -83,32 +83,37 @@ definitions:
   domain.BaselineStats:
     properties:
       mad:
-        example: 43
+        example: 0
         type: number
       p50:
-        example: 233.5
+        example: 1
         type: number
       p95:
-        example: 562
+        example: 2
         type: number
       sampleCount:
-        example: 50
+        example: 188
         type: integer
       updatedAt:
-        example: "2026-01-15T08:00:00Z"
+        example: "2026-01-16T02:00:00Z"
         type: string
     type: object
   domain.ServiceEndpoint:
     properties:
       buckets:
         example:
-        - 16|weekday
+        - 6|weekday
+        - 9|weekday
+        - 10|weekday
+        - 12|weekday
+        - 13|weekend
         - 17|weekday
+        - 20|weekday
         items:
           type: string
         type: array
       endpoint:
-        example: GET /actuator/health
+        example: AiPromptSyncScheduler.syncAiPromptsToDify
         type: string
       service:
         example: twdiw-customer-service-prod
@@ -122,7 +127,7 @@ definitions:
         type: string
       hour:
         description: 0-23
-        example: 16
+        example: 9
         type: integer
     type: object
   handlers.HealthResponse:

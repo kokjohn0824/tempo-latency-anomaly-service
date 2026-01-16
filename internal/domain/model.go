@@ -14,25 +14,25 @@ type TraceEvent struct {
 
 // TimeBucket captures hour-of-day and day type (weekday/weekend).
 type TimeBucket struct {
-    Hour    int    `json:"hour" example:"16"`              // 0-23
+    Hour    int    `json:"hour" example:"9"`               // 0-23
     DayType string `json:"dayType" example:"weekday"`      // "weekday" or "weekend"
 }
 
 // BaselineStats contains precomputed statistics for a given key/bucket.
 type BaselineStats struct {
-    P50         float64   `json:"p50" example:"233.5"`
-    P95         float64   `json:"p95" example:"562.0"`
-    MAD         float64   `json:"mad" example:"43.0"`
-    SampleCount int       `json:"sampleCount" example:"50"`
-    UpdatedAt   time.Time `json:"updatedAt" example:"2026-01-15T08:00:00Z"`
+    P50         float64   `json:"p50" example:"1.0"`
+    P95         float64   `json:"p95" example:"2.0"`
+    MAD         float64   `json:"mad" example:"0.0"`
+    SampleCount int       `json:"sampleCount" example:"188"`
+    UpdatedAt   time.Time `json:"updatedAt" example:"2026-01-16T02:00:00Z"`
 }
 
 // AnomalyCheckRequest is the input for anomaly checking.
 type AnomalyCheckRequest struct {
     Service       string `json:"service" example:"twdiw-customer-service-prod"`
-    Endpoint      string `json:"endpoint" example:"GET /actuator/health"`
-    TimestampNano int64  `json:"timestampNano" example:"1673000000000000000"`
-    DurationMs    int64  `json:"durationMs" example:"250"`
+    Endpoint      string `json:"endpoint" example:"AiPromptSyncScheduler.syncAiPromptsToDify"`
+    TimestampNano int64  `json:"timestampNano" example:"1737000000000000000"`
+    DurationMs    int64  `json:"durationMs" example:"5"`
 }
 
 // BaselineSource indicates which fallback level was used to obtain the baseline.
@@ -54,21 +54,21 @@ type AnomalyCheckResponse struct {
     Baseline         *BaselineStats  `json:"baseline,omitempty"`
     BaselineSource   BaselineSource  `json:"baselineSource" example:"exact"`
     FallbackLevel    int             `json:"fallbackLevel,omitempty" example:"1"`
-    SourceDetails    string          `json:"sourceDetails,omitempty" example:"exact match: 17|weekday"`
-    Explanation      string          `json:"explanation" example:"duration 250ms within threshold 1124.00ms"`
+    SourceDetails    string          `json:"sourceDetails,omitempty" example:"exact match: 9|weekday"`
+    Explanation      string          `json:"explanation" example:"duration 5ms within threshold 2.00ms"`
 }
 
 // ServiceEndpoint represents a service and endpoint pair with available baselines.
 type ServiceEndpoint struct {
     Service   string   `json:"service" example:"twdiw-customer-service-prod"`
-    Endpoint  string   `json:"endpoint" example:"GET /actuator/health"`
-    Buckets   []string `json:"buckets" example:"16|weekday,17|weekday"`
+    Endpoint  string   `json:"endpoint" example:"AiPromptSyncScheduler.syncAiPromptsToDify"`
+    Buckets   []string `json:"buckets" example:"6|weekday,9|weekday,10|weekday,12|weekday,13|weekend,17|weekday,20|weekday"`
 }
 
 // AvailableServicesResponse is the output for listing available services and endpoints.
 type AvailableServicesResponse struct {
-    TotalServices  int               `json:"totalServices" example:"3"`
-    TotalEndpoints int               `json:"totalEndpoints" example:"15"`
+    TotalServices  int               `json:"totalServices" example:"4"`
+    TotalEndpoints int               `json:"totalEndpoints" example:"17"`
     Services       []ServiceEndpoint `json:"services"`
 }
 
