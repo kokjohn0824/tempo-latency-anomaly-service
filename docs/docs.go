@@ -239,6 +239,166 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/v1/traces": {
+            "get": {
+                "description": "Retrieve trace IDs and metadata for a service/endpoint within a time range",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Traces"
+                ],
+                "summary": "Look up traces",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"api-gateway\"",
+                        "description": "Service name",
+                        "name": "service",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"GET /api/users\"",
+                        "description": "Endpoint name",
+                        "name": "endpoint",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 1736928000,
+                        "description": "Start time (unix seconds)",
+                        "name": "start",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 1736931600,
+                        "description": "End time (unix seconds)",
+                        "name": "end",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 200,
+                        "description": "Max traces to return",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.TraceLookupResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Tempo error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Tempo not available",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/traces/{traceId}/longest-span": {
+            "get": {
+                "description": "Retrieve the longest span detail for a given trace ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Traces"
+                ],
+                "summary": "Get longest span in a trace",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"abc123def456\"",
+                        "description": "Trace ID",
+                        "name": "traceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.LongestSpanResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid trace ID",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Trace not found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Trace has no spans",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Tempo error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "504": {
+                        "description": "Tempo timeout",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Tempo not available",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -377,6 +537,51 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.ErrorDetail": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "trace_not_found"
+                },
+                "details": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Trace not found in Tempo"
+                }
+            }
+        },
+        "domain.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/domain.ErrorDetail"
+                }
+            }
+        },
+        "domain.LongestSpanResponse": {
+            "type": "object",
+            "properties": {
+                "computedAt": {
+                    "type": "string",
+                    "example": "2026-01-20T10:12:35.001Z"
+                },
+                "longestSpan": {
+                    "$ref": "#/definitions/domain.SpanSummary"
+                },
+                "source": {
+                    "type": "string",
+                    "example": "tempo"
+                },
+                "traceID": {
+                    "type": "string",
+                    "example": "abc123def456"
+                }
+            }
+        },
         "domain.ServiceEndpoint": {
             "type": "object",
             "properties": {
@@ -405,6 +610,39 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.SpanSummary": {
+            "type": "object",
+            "properties": {
+                "durationMs": {
+                    "type": "integer",
+                    "example": 842
+                },
+                "endTime": {
+                    "type": "string",
+                    "example": "2026-01-20T10:12:33.965Z"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "db.query"
+                },
+                "parentSpanId": {
+                    "type": "string",
+                    "example": "a1b2c3d4e5f6a7b8"
+                },
+                "service": {
+                    "type": "string",
+                    "example": "orders-db"
+                },
+                "spanId": {
+                    "type": "string",
+                    "example": "b7ad6b7169203331"
+                },
+                "startTime": {
+                    "type": "string",
+                    "example": "2026-01-20T10:12:33.123Z"
+                }
+            }
+        },
         "domain.TimeBucket": {
             "type": "object",
             "properties": {
@@ -417,6 +655,62 @@ const docTemplate = `{
                     "description": "0-23",
                     "type": "integer",
                     "example": 9
+                }
+            }
+        },
+        "domain.TraceEvent": {
+            "type": "object",
+            "properties": {
+                "durationMs": {
+                    "type": "integer",
+                    "example": 250
+                },
+                "rootServiceName": {
+                    "type": "string",
+                    "example": "my-service"
+                },
+                "rootTraceName": {
+                    "type": "string",
+                    "example": "GET /api/users"
+                },
+                "startTimeUnixNano": {
+                    "type": "string",
+                    "example": "1673000000000000000"
+                },
+                "traceID": {
+                    "type": "string",
+                    "example": "abc123def456"
+                }
+            }
+        },
+        "domain.TraceLookupResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "end": {
+                    "type": "integer",
+                    "example": 1736931600
+                },
+                "endpoint": {
+                    "type": "string",
+                    "example": "GET /api/users"
+                },
+                "service": {
+                    "type": "string",
+                    "example": "api-gateway"
+                },
+                "start": {
+                    "type": "integer",
+                    "example": 1736928000
+                },
+                "traces": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.TraceEvent"
+                    }
                 }
             }
         },
@@ -471,6 +765,10 @@ const docTemplate = `{
         {
             "description": "Query available services and endpoints with sufficient baseline data",
             "name": "Available Services"
+        },
+        {
+            "description": "Trace lookup endpoints",
+            "name": "Traces"
         }
     ]
 }`

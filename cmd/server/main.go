@@ -1,15 +1,15 @@
 package main
 
 import (
-    "context"
-    "flag"
-    "log"
-    "os"
-    "os/signal"
-    "syscall"
+	"context"
+	"flag"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
-    "github.com/alexchang/tempo-latency-anomaly-service/internal/app"
-    "github.com/alexchang/tempo-latency-anomaly-service/internal/config"
+	"github.com/alexchang/tempo-latency-anomaly-service/internal/app"
+	"github.com/alexchang/tempo-latency-anomaly-service/internal/config"
 )
 
 // @title Tempo Latency Anomaly Detection Service API
@@ -42,27 +42,29 @@ import (
 // @tag.name Available Services
 // @tag.description Query available services and endpoints with sufficient baseline data
 
+// @tag.name Traces
+// @tag.description Trace lookup endpoints
+
 func main() {
-    // Config path via flag or env CONFIG_FILE
-    var cfgPath string
-    flag.StringVar(&cfgPath, "config", os.Getenv("CONFIG_FILE"), "path to config yaml")
-    flag.Parse()
+	// Config path via flag or env CONFIG_FILE
+	var cfgPath string
+	flag.StringVar(&cfgPath, "config", os.Getenv("CONFIG_FILE"), "path to config yaml")
+	flag.Parse()
 
-    cfg, err := config.Load(cfgPath)
-    if err != nil {
-        log.Fatalf("load config: %v", err)
-    }
+	cfg, err := config.Load(cfgPath)
+	if err != nil {
+		log.Fatalf("load config: %v", err)
+	}
 
-    a, err := app.New(cfg)
-    if err != nil {
-        log.Fatalf("init app: %v", err)
-    }
+	a, err := app.New(cfg)
+	if err != nil {
+		log.Fatalf("init app: %v", err)
+	}
 
-    ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-    defer stop()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-    if err := a.Run(ctx); err != nil {
-        log.Fatalf("run: %v", err)
-    }
+	if err := a.Run(ctx); err != nil {
+		log.Fatalf("run: %v", err)
+	}
 }
-
