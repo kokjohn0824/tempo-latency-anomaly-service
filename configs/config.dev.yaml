@@ -7,7 +7,8 @@ redis:
   db: 0
 
 tempo:
-  url: http://192.168.4.138:3200
+  url: http://localhost:3200  # 使用 tempo-otlp-trace-demo 部署的本地 Tempo
+  # 原始遠端連線: http://192.168.4.138:3200
   auth_token: ""
 
 stats:
