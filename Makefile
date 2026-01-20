@@ -60,10 +60,20 @@ docker-build: test
 	@echo "Tests passed! Building Docker image..."
 	docker compose -f docker/compose.yml build
 
-# Start Docker Compose services
+# Start Docker Compose services (port 8081)
 docker-up:
 	@echo "Starting Docker Compose services..."
 	docker compose -f docker/compose.yml up -d
+	@echo ""
+	@echo "Services started!"
+	@echo "  - Redis: localhost:6379"
+	@echo "  - API: http://localhost:8081"
+	@echo "  - Swagger UI: http://localhost:8081/swagger/index.html"
+	@echo "  - Health Check: http://localhost:8081/healthz"
+	@echo ""
+	@echo "Waiting for services to be ready..."
+	@sleep 5
+	@curl -s http://localhost:8081/healthz > /dev/null && echo "✓ Service is healthy!" || echo "⚠ Service health check failed (may need more time)"
 
 # Stop and remove Docker Compose services
 docker-down:
