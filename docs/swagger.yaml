@@ -104,7 +104,7 @@ definitions:
         example: trace_not_found
         type: string
       details:
-        additionalProperties: true
+        additionalProperties: {}
         type: object
       message:
         example: Trace not found in Tempo
@@ -249,7 +249,7 @@ definitions:
         example: "2026-01-15T08:00:00Z"
         type: string
     type: object
-host: localhost:8080
+host: localhost:8081
 info:
   contact:
     email: support@example.com
@@ -496,7 +496,7 @@ paths:
       description: Retrieve the longest span detail for a given trace ID
       parameters:
       - description: Trace ID
-        example: "abc123def456"
+        example: '"abc123def456"'
         in: path
         name: traceId
         required: true
@@ -524,12 +524,12 @@ paths:
           description: Tempo error
           schema:
             $ref: '#/definitions/domain.ErrorResponse'
-        "504":
-          description: Tempo timeout
-          schema:
-            $ref: '#/definitions/domain.ErrorResponse'
         "503":
           description: Tempo not available
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "504":
+          description: Tempo timeout
           schema:
             $ref: '#/definitions/domain.ErrorResponse'
       summary: Get longest span in a trace

@@ -1,4 +1,4 @@
-.PHONY: help test test-coverage test-short test-verbose clean build docker-build
+.PHONY: help test test-coverage test-short test-verbose clean build docker-build docker-up docker-down run dev-up dev-down dev-restart swagger
 
 # Default target
 help:
@@ -11,7 +11,14 @@ help:
 	@echo "  make test-verbose   - Run tests with verbose output"
 	@echo "  make clean          - Clean build artifacts and test cache"
 	@echo "  make build          - Build the service binary"
+	@echo "  make run            - Run the service locally (foreground)"
+	@echo "  make swagger        - Regenerate Swagger documentation"
 	@echo "  make docker-build   - Build Docker image (with pre-test)"
+	@echo "  make docker-up      - Start local Docker Compose services"
+	@echo "  make docker-down    - Stop and remove local Docker Compose services"
+	@echo "  make dev-up         - Start Redis and run service locally"
+	@echo "  make dev-down       - Stop local development environment"
+	@echo "  make dev-restart    - Restart local service (keep Redis running)"
 
 # Run all unit tests
 test:
@@ -52,3 +59,54 @@ build: test
 docker-build: test
 	@echo "Tests passed! Building Docker image..."
 	docker compose -f docker/compose.yml build
+
+# Start Docker Compose services
+docker-up:
+	@echo "Starting Docker Compose services..."
+	docker compose -f docker/compose.yml up -d
+
+# Stop and remove Docker Compose services
+docker-down:
+	@echo "Stopping Docker Compose services..."
+	docker compose -f docker/compose.yml down
+
+# Run the service locally
+run:
+	@echo "Running service locally..."
+	go run ./cmd/server -config=configs/config.dev.yaml
+
+# Regenerate Swagger documentation
+swagger:
+	@echo "Regenerating Swagger documentation..."
+	swag init -g cmd/server/main.go -o docs
+	@echo "Swagger documentation updated!"
+
+# Start local development environment (Redis + Service)
+dev-up:
+	@echo "Starting Redis..."
+	docker compose -f docker/compose.yml up -d redis
+	@echo "Waiting for Redis to be ready..."
+	@sleep 3
+	@echo "Starting service..."
+	@echo "Run 'make run' in another terminal or use 'go run ./cmd/server -config=configs/config.dev.yaml &'"
+
+# Stop local development environment
+dev-down:
+	@echo "Stopping service..."
+	@-pkill -f "go run.*cmd/server" || true
+	@-lsof -ti :8081 | xargs kill 2>/dev/null || true
+	@echo "Stopping Redis..."
+	docker compose -f docker/compose.yml down redis
+	@echo "Development environment stopped"
+
+# Restart local service (keep Redis running)
+dev-restart:
+	@echo "Stopping service..."
+	@-pkill -f "go run.*cmd/server" || true
+	@-lsof -ti :8081 | xargs kill 2>/dev/null || true
+	@sleep 2
+	@echo "Starting service..."
+	@nohup go run ./cmd/server -config=configs/config.dev.yaml > /tmp/tempo-anomaly-service.log 2>&1 &
+	@sleep 3
+	@echo "Service restarted! Check logs: tail -f /tmp/tempo-anomaly-service.log"
+	@curl -s http://localhost:8081/healthz && echo " - Service is healthy!" || echo " - Service health check failed"

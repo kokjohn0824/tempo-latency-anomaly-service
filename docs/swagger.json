@@ -17,7 +17,7 @@
         },
         "version": "1.0"
     },
-    "host": "localhost:8080",
+    "host": "localhost:8081",
     "basePath": "/",
     "paths": {
         "/healthz": {
@@ -383,14 +383,14 @@
                             "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
-                    "504": {
-                        "description": "Tempo timeout",
+                    "503": {
+                        "description": "Tempo not available",
                         "schema": {
                             "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
-                    "503": {
-                        "description": "Tempo not available",
+                    "504": {
+                        "description": "Tempo timeout",
                         "schema": {
                             "$ref": "#/definitions/domain.ErrorResponse"
                         }
@@ -544,7 +544,7 @@
                 },
                 "details": {
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": {}
                 },
                 "message": {
                     "type": "string",

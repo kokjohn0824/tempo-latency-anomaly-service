@@ -385,14 +385,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
-                    "504": {
-                        "description": "Tempo timeout",
+                    "503": {
+                        "description": "Tempo not available",
                         "schema": {
                             "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
-                    "503": {
-                        "description": "Tempo not available",
+                    "504": {
+                        "description": "Tempo timeout",
                         "schema": {
                             "$ref": "#/definitions/domain.ErrorResponse"
                         }
@@ -546,7 +546,7 @@ const docTemplate = `{
                 },
                 "details": {
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": {}
                 },
                 "message": {
                     "type": "string",
@@ -776,7 +776,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "localhost:8081",
 	BasePath:         "/",
 	Schemes:          []string{"http", "https"},
 	Title:            "Tempo Latency Anomaly Detection Service API",
