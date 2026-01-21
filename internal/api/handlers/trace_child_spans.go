@@ -5,12 +5,17 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/alexchang/tempo-latency-anomaly-service/internal/domain"
 	"github.com/alexchang/tempo-latency-anomaly-service/internal/tempo"
 )
+
+// TraceChildSpansRequest represents the request body for child spans query
+type TraceChildSpansRequest struct {
+	TraceID string `json:"traceId" example:"abc123def456"`
+	SpanID  string `json:"spanId" example:"xyz789"`
+}
 
 // TraceChildSpans godoc
 // @Summary Get child spans of a specific span
@@ -18,16 +23,15 @@ import (
 // @Tags Traces
 // @Accept json
 // @Produce json
-// @Param traceId path string true "Trace ID" example("abc123def456")
-// @Param spanId path string true "Parent Span ID" example("xyz789")
+// @Param request body TraceChildSpansRequest true "Trace and Span IDs"
 // @Success 200 {object} domain.ChildSpansResponse
-// @Failure 400 {object} domain.ErrorResponse "Invalid trace ID or span ID"
+// @Failure 400 {object} domain.ErrorResponse "Invalid request"
 // @Failure 404 {object} domain.ErrorResponse "Trace or span not found"
 // @Failure 422 {object} domain.ErrorResponse "Trace has no spans"
 // @Failure 502 {object} domain.ErrorResponse "Tempo error"
 // @Failure 504 {object} domain.ErrorResponse "Tempo timeout"
 // @Failure 503 {object} domain.ErrorResponse "Tempo not available"
-// @Router /v1/traces/{traceId}/spans/{spanId}/children [get]
+// @Router /v1/traces/child-spans [post]
 func TraceChildSpans(client *tempo.Client) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if client == nil {
@@ -35,58 +39,63 @@ func TraceChildSpans(client *tempo.Client) http.Handler {
 			return
 		}
 
-		traceID, spanID, ok := parseTraceAndSpanID(r.URL.Path)
-		if !ok {
-			// Debug: log the path that failed to parse
-			writeError(w, http.StatusBadRequest, "invalid_parameters", "traceId and spanID must be provided", map[string]any{"traceId": traceID, "spanId": spanID, "path": r.URL.Path})
+		// Parse request body
+		var req TraceChildSpansRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_request", "invalid JSON body", map[string]any{"error": err.Error()})
 			return
 		}
 
-		spans, err := client.GetTraceSpans(r.Context(), traceID)
+		if req.TraceID == "" || req.SpanID == "" {
+			writeError(w, http.StatusBadRequest, "invalid_parameters", "traceId and spanId are required", map[string]any{"traceId": req.TraceID, "spanId": req.SpanID})
+			return
+		}
+
+		spans, err := client.GetTraceSpans(r.Context(), req.TraceID)
 		if err != nil {
 			if tempo.IsTimeout(err) {
-				writeError(w, http.StatusGatewayTimeout, "tempo_timeout", "tempo request timed out", map[string]any{"traceId": traceID})
+				writeError(w, http.StatusGatewayTimeout, "tempo_timeout", "tempo request timed out", map[string]any{"traceId": req.TraceID})
 				return
 			}
 			var respErr tempo.ResponseError
 			if errors.As(err, &respErr) {
 				switch respErr.StatusCode {
 				case http.StatusNotFound:
-					writeError(w, http.StatusNotFound, "trace_not_found", "trace not found in Tempo", map[string]any{"traceId": traceID})
+					writeError(w, http.StatusNotFound, "trace_not_found", "trace not found in Tempo", map[string]any{"traceId": req.TraceID})
 					return
 				case http.StatusTooManyRequests:
-					writeError(w, http.StatusBadGateway, "tempo_error", "tempo rate limited", map[string]any{"traceId": traceID, "tempoStatus": respErr.StatusCode})
+					writeError(w, http.StatusBadGateway, "tempo_error", "tempo rate limited", map[string]any{"traceId": req.TraceID, "tempoStatus": respErr.StatusCode})
 					return
 				default:
 					if respErr.StatusCode >= 500 {
-						writeError(w, http.StatusBadGateway, "tempo_error", "tempo request failed", map[string]any{"traceId": traceID, "tempoStatus": respErr.StatusCode})
+						writeError(w, http.StatusBadGateway, "tempo_error", "tempo request failed", map[string]any{"traceId": req.TraceID, "tempoStatus": respErr.StatusCode})
 						return
 					}
-					writeError(w, http.StatusBadGateway, "tempo_error", "tempo request failed", map[string]any{"traceId": traceID, "tempoStatus": respErr.StatusCode})
+					writeError(w, http.StatusBadGateway, "tempo_error", "tempo request failed", map[string]any{"traceId": req.TraceID, "tempoStatus": respErr.StatusCode})
 					return
 				}
 			}
-			writeError(w, http.StatusBadGateway, "tempo_error", "tempo request failed", map[string]any{"traceId": traceID})
+			writeError(w, http.StatusBadGateway, "tempo_error", "tempo request failed", map[string]any{"traceId": req.TraceID})
 			return
 		}
 
 		if len(spans) == 0 {
-			writeError(w, http.StatusUnprocessableEntity, "trace_empty", "trace has no spans", map[string]any{"traceId": traceID})
+			writeError(w, http.StatusUnprocessableEntity, "trace_empty", "trace has no spans", map[string]any{"traceId": req.TraceID})
 			return
 		}
 
 		// Find parent span
-		parentSpan, found := findSpanByID(spans, spanID)
+		parentSpan, found := findSpanByID(spans, req.SpanID)
 		if !found {
-			writeError(w, http.StatusNotFound, "span_not_found", "parent span not found in trace", map[string]any{"traceId": traceID, "spanId": spanID})
+			writeError(w, http.StatusNotFound, "span_not_found", "parent span not found in trace", map[string]any{"traceId": req.TraceID, "spanId": req.SpanID})
 			return
 		}
 
 		// Find child spans
-		childSpans := findChildSpans(spans, spanID)
+		childSpans := findChildSpans(spans, req.SpanID)
 
 		resp := domain.ChildSpansResponse{
-			TraceID: traceID,
+			TraceID: req.TraceID,
 			ParentSpan: domain.SpanSummary{
 				SpanID:       parentSpan.SpanID,
 				Name:         parentSpan.Name,
@@ -104,24 +113,6 @@ func TraceChildSpans(client *tempo.Client) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	})
-}
-
-// parseTraceAndSpanID extracts trace ID and span ID from URL path
-// Expected format: /v1/traces/{traceId}/spans/{spanId}/children
-func parseTraceAndSpanID(path string) (traceID string, spanID string, ok bool) {
-	const prefix = "/v1/traces/"
-	if !strings.HasPrefix(path, prefix) {
-		return "", "", false
-	}
-	trimmed := strings.TrimPrefix(path, prefix)
-	parts := strings.Split(trimmed, "/")
-	// Expected: [traceId, "spans", spanId, "children"]
-	if len(parts) != 4 || parts[0] == "" || parts[1] != "spans" || parts[2] == "" || parts[3] != "children" {
-		return "", "", false
-	}
-	
-	// The span ID is already URL decoded by the HTTP server
-	return parts[0], parts[2], true
 }
 
 // findSpanByID finds a span by its ID

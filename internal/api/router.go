@@ -53,25 +53,30 @@ func NewRouter(checkSvc *service.Check, listSvc *service.ListAvailable, st store
 	})
 
 	mux.HandleFunc("/v1/traces/", func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		
+		// Check if it's a child spans request (POST /v1/traces/child-spans)
+		if path == "/v1/traces/child-spans" {
+			if r.Method != http.MethodPost {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			handlers.TraceChildSpans(tempoClient).ServeHTTP(w, r)
+			return
+		}
+		
+		// All other /v1/traces/* endpoints are GET only
 		if r.Method != http.MethodGet {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		// Route to appropriate handler based on URL pattern
-		// /v1/traces/{traceId}/spans/{spanId}/children -> TraceChildSpans
-		// /v1/traces/{traceId}/longest-span -> TraceLongestSpan
-		path := r.URL.Path
 		
-		// Check if it's a child spans request (contains "/spans/" and ends with "/children")
-		if strings.Contains(path, "/spans/") && strings.HasSuffix(path, "/children") {
-			handlers.TraceChildSpans(tempoClient).ServeHTTP(w, r)
-			return
-		}
 		// Check if it's a longest span request
 		if strings.HasSuffix(path, "/longest-span") {
 			handlers.TraceLongestSpan(tempoClient).ServeHTTP(w, r)
 			return
 		}
+		
 		// If no match, return 404
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]string{"error": "endpoint not found"})
