@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/alexchang/tempo-latency-anomaly-service/internal/api/handlers"
 	"github.com/alexchang/tempo-latency-anomaly-service/internal/service"
@@ -56,7 +57,24 @@ func NewRouter(checkSvc *service.Check, listSvc *service.ListAvailable, st store
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		handlers.TraceLongestSpan(tempoClient).ServeHTTP(w, r)
+		// Route to appropriate handler based on URL pattern
+		// /v1/traces/{traceId}/spans/{spanId}/children -> TraceChildSpans
+		// /v1/traces/{traceId}/longest-span -> TraceLongestSpan
+		path := r.URL.Path
+		
+		// Check if it's a child spans request (contains "/spans/" and ends with "/children")
+		if strings.Contains(path, "/spans/") && strings.HasSuffix(path, "/children") {
+			handlers.TraceChildSpans(tempoClient).ServeHTTP(w, r)
+			return
+		}
+		// Check if it's a longest span request
+		if strings.HasSuffix(path, "/longest-span") {
+			handlers.TraceLongestSpan(tempoClient).ServeHTTP(w, r)
+			return
+		}
+		// If no match, return 404
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "endpoint not found"})
 	})
 
 	// Swagger UI endpoint

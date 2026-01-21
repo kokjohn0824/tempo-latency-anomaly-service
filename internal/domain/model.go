@@ -41,6 +41,15 @@ type LongestSpanResponse struct {
 	ComputedAt  time.Time   `json:"computedAt" example:"2026-01-20T10:12:35.001Z"`
 }
 
+// ChildSpansResponse returns all child spans of a specific span within a trace.
+type ChildSpansResponse struct {
+	TraceID    string        `json:"traceId" example:"abc123def456"`
+	ParentSpan SpanSummary   `json:"parentSpan"`
+	Children   []SpanSummary `json:"children"`
+	ChildCount int           `json:"childCount" example:"7"`
+	ComputedAt time.Time     `json:"computedAt" example:"2026-01-20T10:12:35.001Z"`
+}
+
 // ErrorDetail describes an API error.
 type ErrorDetail struct {
 	Code    string         `json:"code" example:"trace_not_found"`
