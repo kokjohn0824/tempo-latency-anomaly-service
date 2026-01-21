@@ -1,5 +1,10 @@
 # Tempo Latency Anomaly Service
 
+[![GitHub](https://img.shields.io/badge/GitHub-tempo--latency--anomaly--service-blue?logo=github)](https://github.com/kokjohn0824/tempo-latency-anomaly-service)
+[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://go.dev/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 Time-aware, explainable API latency anomaly detection using Grafana Tempo traces. Baselines are precomputed per time bucket (hour-of-day × weekday/weekend) and checked in O(1) on the request path.
 
 Key properties:
