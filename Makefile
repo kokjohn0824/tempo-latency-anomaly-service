@@ -1,4 +1,15 @@
-.PHONY: help test test-coverage test-short test-verbose clean build docker-build docker-up docker-down run dev-up dev-down dev-restart swagger
+# Remote deployment settings
+REMOTE_HOST ?= 192.168.4.208
+REMOTE_USER ?= root
+REMOTE_PATH ?= /root/tempo-anomaly
+REMOTE_IMAGE_PATH ?= $(REMOTE_PATH)/images
+REMOTE_COMPOSE_DIR ?= $(REMOTE_PATH)
+REMOTE_SERVICE_NAME ?= anomaly-service
+ARCH ?= amd64
+PLATFORM ?= linux/$(ARCH)
+
+.PHONY: help test test-coverage test-short test-verbose clean build docker-build docker-up docker-down run dev-up dev-down dev-restart swagger \
+	image-save deploy-image deploy-compose deploy-full
 
 # Default target
 help:
@@ -19,6 +30,18 @@ help:
 	@echo "  make dev-up         - Start Redis and run service locally"
 	@echo "  make dev-down       - Stop local development environment"
 	@echo "  make dev-restart    - Restart local service (keep Redis running)"
+	@echo ""
+	@echo "Remote Deployment:"
+	@echo "  make image-save     - Build and save Docker image as tar file"
+	@echo "  make deploy-image   - Build, save and deploy Docker image to remote server"
+	@echo "  make deploy-compose - Deploy docker-compose.yml to remote server"
+	@echo "  make deploy-full    - Full deployment (image + compose + restart)"
+	@echo ""
+	@echo "Variables (override with VAR=value):"
+	@echo "  REMOTE_HOST=$(REMOTE_HOST)"
+	@echo "  REMOTE_USER=$(REMOTE_USER)"
+	@echo "  REMOTE_PATH=$(REMOTE_PATH)"
+	@echo "  ARCH=$(ARCH) (amd64 or arm64)"
 
 # Run all unit tests
 test:
@@ -120,3 +143,54 @@ dev-restart:
 	@sleep 3
 	@echo "Service restarted! Check logs: tail -f /tmp/tempo-anomaly-service.log"
 	@curl -s http://localhost:8081/healthz && echo " - Service is healthy!" || echo " - Service health check failed"
+
+# Build and save Docker image as tar file
+image-save:
+	@echo "Building Docker image for $(PLATFORM)..."
+	docker buildx build --platform=$(PLATFORM) --load -t tempo-anomaly-service:$(ARCH) -f docker/Dockerfile .
+	@echo "Saving Docker image as tar file..."
+	docker save tempo-anomaly-service:$(ARCH) -o tempo-anomaly-service-$(ARCH).tar
+	@echo "✓ Image saved: tempo-anomaly-service-$(ARCH).tar"
+
+# Deploy Docker image to remote server
+deploy-image: test image-save
+	@echo "Deploying Docker image to $(REMOTE_USER)@$(REMOTE_HOST)..."
+	@echo "Creating remote directory..."
+	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "mkdir -p $(REMOTE_IMAGE_PATH)"
+	@echo "Uploading image file..."
+	@echo "put tempo-anomaly-service-$(ARCH).tar $(REMOTE_IMAGE_PATH)/" | sftp $(REMOTE_USER)@$(REMOTE_HOST)
+	@echo "Loading Docker image on remote host..."
+	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "docker load -i $(REMOTE_IMAGE_PATH)/tempo-anomaly-service-$(ARCH).tar"
+	@echo "✓ Image deployment completed!"
+	@echo "  - Image: $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_IMAGE_PATH)/tempo-anomaly-service-$(ARCH).tar"
+
+# Deploy docker-compose configuration to remote server
+deploy-compose:
+	@echo "Deploying docker-compose configuration to $(REMOTE_USER)@$(REMOTE_HOST)..."
+	@echo "Creating remote directory..."
+	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "mkdir -p $(REMOTE_COMPOSE_DIR)"
+	@echo "Uploading docker-compose.yml..."
+	@echo "put docker/compose.yml $(REMOTE_COMPOSE_DIR)/docker-compose.yml" | sftp $(REMOTE_USER)@$(REMOTE_HOST)
+	@echo "Uploading configs..."
+	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "mkdir -p $(REMOTE_COMPOSE_DIR)/configs"
+	@echo "put configs/*.yaml $(REMOTE_COMPOSE_DIR)/configs/" | sftp $(REMOTE_USER)@$(REMOTE_HOST)
+	@echo "✓ Configuration deployment completed!"
+
+# Full deployment: image + compose + restart services
+deploy-full: deploy-image deploy-compose
+	@echo "Restarting services on remote host..."
+	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_COMPOSE_DIR) && docker compose down && docker compose up -d"
+	@echo "Waiting for services to start..."
+	@sleep 10
+	@echo "Checking service health..."
+	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "curl -s http://localhost:8081/healthz" && echo "✓ Service is healthy!" || echo "⚠ Service health check failed"
+	@echo ""
+	@echo "✓ Full deployment completed successfully!"
+	@echo "  - Host: $(REMOTE_USER)@$(REMOTE_HOST)"
+	@echo "  - Path: $(REMOTE_COMPOSE_DIR)"
+	@echo "  - Service: $(REMOTE_SERVICE_NAME)"
+	@echo ""
+	@echo "Access the service:"
+	@echo "  - API: http://$(REMOTE_HOST):8081"
+	@echo "  - Swagger: http://$(REMOTE_HOST):8081/swagger/index.html"
+	@echo "  - Health: http://$(REMOTE_HOST):8081/healthz"
