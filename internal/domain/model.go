@@ -85,6 +85,14 @@ type AnomalyCheckRequest struct {
 	DurationMs    int64  `json:"durationMs" example:"5"`
 }
 
+// SpanAnomalyCheckRequest is the input for span anomaly checking.
+type SpanAnomalyCheckRequest struct {
+	Service       string `json:"service" example:"orders"`
+	SpanName      string `json:"spanName" example:"processPayment"`
+	TimestampNano int64  `json:"timestampNano" example:"1737000000000000000"`
+	DurationMs    int64  `json:"durationMs" example:"120"`
+}
+
 // BaselineSource indicates which fallback level was used to obtain the baseline.
 type BaselineSource string
 
@@ -106,6 +114,29 @@ type AnomalyCheckResponse struct {
 	FallbackLevel   int            `json:"fallbackLevel,omitempty" example:"1"`
 	SourceDetails   string         `json:"sourceDetails,omitempty" example:"exact match: 9|weekday"`
 	Explanation     string         `json:"explanation" example:"duration 5ms within threshold 2.00ms"`
+}
+
+// ChildSpanAnomaly represents anomaly evaluation for a child span.
+type ChildSpanAnomaly struct {
+	Span            SpanSummary    `json:"span"`
+	IsAnomaly       bool           `json:"isAnomaly" example:"false"`
+	CannotDetermine bool           `json:"cannotDetermine,omitempty" example:"false"`
+	Bucket          TimeBucket     `json:"bucket"`
+	Baseline        *BaselineStats `json:"baseline,omitempty"`
+	BaselineSource  BaselineSource `json:"baselineSource" example:"exact"`
+	FallbackLevel   int            `json:"fallbackLevel,omitempty" example:"1"`
+	SourceDetails   string         `json:"sourceDetails,omitempty" example:"exact match: 9|weekday"`
+	Explanation     string         `json:"explanation" example:"duration 5ms within threshold 2.00ms"`
+}
+
+// ChildSpanAnomaliesResponse returns anomaly status for child spans of a parent span.
+type ChildSpanAnomaliesResponse struct {
+	TraceID      string             `json:"traceId" example:"abc123def456"`
+	ParentSpan   SpanSummary        `json:"parentSpan"`
+	Children     []ChildSpanAnomaly `json:"children"`
+	ChildCount   int                `json:"childCount" example:"7"`
+	AnomalyCount int                `json:"anomalyCount" example:"2"`
+	ComputedAt   time.Time          `json:"computedAt" example:"2026-01-20T10:12:35.001Z"`
 }
 
 // ServiceEndpoint represents a service and endpoint pair with available baselines.

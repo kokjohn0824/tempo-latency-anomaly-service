@@ -98,6 +98,73 @@ definitions:
         example: "2026-01-16T02:00:00Z"
         type: string
     type: object
+  domain.ChildSpanAnomaliesResponse:
+    properties:
+      anomalyCount:
+        example: 2
+        type: integer
+      childCount:
+        example: 7
+        type: integer
+      children:
+        items:
+          $ref: '#/definitions/domain.ChildSpanAnomaly'
+        type: array
+      computedAt:
+        example: "2026-01-20T10:12:35.001Z"
+        type: string
+      parentSpan:
+        $ref: '#/definitions/domain.SpanSummary'
+      traceId:
+        example: abc123def456
+        type: string
+    type: object
+  domain.ChildSpanAnomaly:
+    properties:
+      baseline:
+        $ref: '#/definitions/domain.BaselineStats'
+      baselineSource:
+        allOf:
+        - $ref: '#/definitions/domain.BaselineSource'
+        example: exact
+      bucket:
+        $ref: '#/definitions/domain.TimeBucket'
+      cannotDetermine:
+        example: false
+        type: boolean
+      explanation:
+        example: duration 5ms within threshold 2.00ms
+        type: string
+      fallbackLevel:
+        example: 1
+        type: integer
+      isAnomaly:
+        example: false
+        type: boolean
+      sourceDetails:
+        example: 'exact match: 9|weekday'
+        type: string
+      span:
+        $ref: '#/definitions/domain.SpanSummary'
+    type: object
+  domain.ChildSpansResponse:
+    properties:
+      childCount:
+        example: 7
+        type: integer
+      children:
+        items:
+          $ref: '#/definitions/domain.SpanSummary'
+        type: array
+      computedAt:
+        example: "2026-01-20T10:12:35.001Z"
+        type: string
+      parentSpan:
+        $ref: '#/definitions/domain.SpanSummary'
+      traceId:
+        example: abc123def456
+        type: string
+    type: object
   domain.ErrorDetail:
     properties:
       code:
@@ -229,6 +296,24 @@ definitions:
     properties:
       status:
         example: ok
+        type: string
+    type: object
+  handlers.TraceChildSpanAnomaliesRequest:
+    properties:
+      parentSpanId:
+        example: xyz789
+        type: string
+      traceId:
+        example: abc123def456
+        type: string
+    type: object
+  handlers.TraceChildSpansRequest:
+    properties:
+      spanId:
+        example: xyz789
+        type: string
+      traceId:
+        example: abc123def456
         type: string
     type: object
   store.Baseline:
@@ -533,6 +618,99 @@ paths:
           schema:
             $ref: '#/definitions/domain.ErrorResponse'
       summary: Get longest span in a trace
+      tags:
+      - Traces
+  /v1/traces/child-span-anomalies:
+    post:
+      consumes:
+      - application/json
+      description: Evaluate anomalies for direct child spans under a parent span in
+        a trace
+      parameters:
+      - description: Trace and optional parent span ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.TraceChildSpanAnomaliesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ChildSpanAnomaliesResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Trace or span not found
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "422":
+          description: Trace has no spans
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "502":
+          description: Tempo error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "503":
+          description: Tempo not available
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "504":
+          description: Tempo timeout
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Get child span anomalies for a parent span
+      tags:
+      - Traces
+  /v1/traces/child-spans:
+    post:
+      consumes:
+      - application/json
+      description: Retrieve all child spans for a given span ID within a trace
+      parameters:
+      - description: Trace and Span IDs
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.TraceChildSpansRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ChildSpansResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Trace or span not found
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "422":
+          description: Trace has no spans
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "502":
+          description: Tempo error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "503":
+          description: Tempo not available
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "504":
+          description: Tempo timeout
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Get child spans of a specific span
       tags:
       - Traces
 schemes:

@@ -9,31 +9,29 @@ import (
 	"github.com/alexchang/tempo-latency-anomaly-service/internal/store"
 )
 
-// Check service evaluates whether a given request is anomalous based on cached baselines.
-type Check struct {
+// SpanCheck evaluates whether a span is anomalous based on cached baselines.
+type SpanCheck struct {
 	store          store.Store
 	cfg            *config.Config
-	baselineLookup *BaselineLookup
+	baselineLookup *SpanBaselineLookup
 }
 
-func NewCheck(store store.Store, cfg *config.Config, baselineLookup *BaselineLookup) *Check {
-	return &Check{store: store, cfg: cfg, baselineLookup: baselineLookup}
+func NewSpanCheck(store store.Store, cfg *config.Config, baselineLookup *SpanBaselineLookup) *SpanCheck {
+	return &SpanCheck{store: store, cfg: cfg, baselineLookup: baselineLookup}
 }
 
-func (s *Check) Evaluate(ctx context.Context, req domain.AnomalyCheckRequest) (domain.AnomalyCheckResponse, error) {
+func (s *SpanCheck) Evaluate(ctx context.Context, req domain.SpanAnomalyCheckRequest) (domain.AnomalyCheckResponse, error) {
 	if s == nil || s.store == nil || s.cfg == nil || s.baselineLookup == nil {
-		return domain.AnomalyCheckResponse{}, fmt.Errorf("check service not initialized")
+		return domain.AnomalyCheckResponse{}, fmt.Errorf("span check service not initialized")
 	}
 
-	// Convert int64 timestamp to string for ParseTimeBucket
 	timestampStr := fmt.Sprintf("%d", req.TimestampNano)
 	bucket, err := domain.ParseTimeBucket(timestampStr, s.cfg.Timezone)
 	if err != nil {
 		return domain.AnomalyCheckResponse{}, fmt.Errorf("parse time bucket: %w", err)
 	}
 
-	// Use BaselineLookup with fallback strategy
-	res, err := s.baselineLookup.LookupWithFallback(ctx, req.Service, req.Endpoint, bucket)
+	res, err := s.baselineLookup.LookupWithFallback(ctx, req.Service, req.SpanName, bucket)
 	if err != nil {
 		return domain.AnomalyCheckResponse{}, fmt.Errorf("lookup baseline: %w", err)
 	}
@@ -42,7 +40,6 @@ func (s *Check) Evaluate(ctx context.Context, req domain.AnomalyCheckRequest) (d
 		b = res.Baseline
 	}
 
-	// Prepare response scaffolding
 	resp := domain.AnomalyCheckResponse{Bucket: bucket}
 	if res != nil {
 		resp.BaselineSource = res.Source
@@ -60,7 +57,6 @@ func (s *Check) Evaluate(ctx context.Context, req domain.AnomalyCheckRequest) (d
 		}
 	}
 
-	// Insufficient baseline data
 	if b == nil || b.SampleCount < s.cfg.Stats.MinSamples {
 		resp.IsAnomaly = false
 		resp.Explanation = fmt.Sprintf(
@@ -75,19 +71,4 @@ func (s *Check) Evaluate(ctx context.Context, req domain.AnomalyCheckRequest) (d
 	resp.IsAnomaly = eval.IsAnomaly
 	resp.Explanation = eval.Explanation
 	return resp, nil
-}
-
-func valueOrZero[T any, R any](v *T, f func(*T) R) R {
-	var zero R
-	if v == nil {
-		return zero
-	}
-	return f(v)
-}
-
-func ternary[T any](cond bool, a, b T) T {
-	if cond {
-		return a
-	}
-	return b
 }

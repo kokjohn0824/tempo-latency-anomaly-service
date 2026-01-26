@@ -16,16 +16,19 @@ import (
 
 // App wires all components together and holds process-level state.
 type App struct {
-	Cfg         *config.Config
-	Store       storepkg.Store
-	Tempo       *tempo.Client
-	Ingest      *service.Ingest
-	Baseline    *service.Baseline
-	Check       *service.Check
-	ListAvail   *service.ListAvailable
-	TempoPoller *jobs.TempoPoller
-	BaselineJob *jobs.BaselineRecompute
-	HTTPServer  *http.Server
+	Cfg          *config.Config
+	Store        storepkg.Store
+	Tempo        *tempo.Client
+	Ingest       *service.Ingest
+	SpanIngest   *service.SpanIngest
+	Baseline     *service.Baseline
+	SpanBaseline *service.SpanBaseline
+	Check        *service.Check
+	SpanCheck    *service.SpanCheck
+	ListAvail    *service.ListAvailable
+	TempoPoller  *jobs.TempoPoller
+	BaselineJob  *jobs.BaselineRecompute
+	HTTPServer   *http.Server
 }
 
 // New constructs the full application from configuration.
@@ -48,17 +51,21 @@ func New(cfg *config.Config) (*App, error) {
 
 	// Services
 	ingestSvc := service.NewIngest(st, cfg)
+	spanIngest := service.NewSpanIngest(st, cfg)
 	baselineSvc := service.NewBaseline(st, cfg)
+	spanBaseline := service.NewSpanBaseline(st, cfg)
 	baselineLookup := service.NewBaselineLookup(st, cfg)
+	spanBaselineLookup := service.NewSpanBaselineLookup(st, cfg)
 	checkSvc := service.NewCheck(st, cfg, baselineLookup)
+	spanCheck := service.NewSpanCheck(st, cfg, spanBaselineLookup)
 	listAvailSvc := service.NewListAvailable(st, cfg.Stats.MinSamples)
 
 	// Jobs
-	poller := jobs.NewTempoPoller(cfg, tempoClient, ingestSvc)
-	recompute := jobs.NewBaselineRecompute(cfg, baselineSvc, st, 100)
+	poller := jobs.NewTempoPoller(cfg, tempoClient, ingestSvc, spanIngest)
+	recompute := jobs.NewBaselineRecompute(cfg, baselineSvc, spanBaseline, st, 100)
 
 	// HTTP router and server
-	apiHandler := api.NewRouter(checkSvc, listAvailSvc, st, tempoClient)
+	apiHandler := api.NewRouter(checkSvc, spanCheck, listAvailSvc, st, tempoClient)
 
 	mux := http.NewServeMux()
 	// Mount API under root
@@ -76,15 +83,18 @@ func New(cfg *config.Config) (*App, error) {
 	}
 
 	return &App{
-		Cfg:         cfg,
-		Store:       st,
-		Tempo:       tempoClient,
-		Ingest:      ingestSvc,
-		Baseline:    baselineSvc,
-		Check:       checkSvc,
-		ListAvail:   listAvailSvc,
-		TempoPoller: poller,
-		BaselineJob: recompute,
-		HTTPServer:  srv,
+		Cfg:          cfg,
+		Store:        st,
+		Tempo:        tempoClient,
+		Ingest:       ingestSvc,
+		SpanIngest:   spanIngest,
+		Baseline:     baselineSvc,
+		SpanBaseline: spanBaseline,
+		Check:        checkSvc,
+		SpanCheck:    spanCheck,
+		ListAvail:    listAvailSvc,
+		TempoPoller:  poller,
+		BaselineJob:  recompute,
+		HTTPServer:   srv,
 	}, nil
 }

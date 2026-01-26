@@ -15,7 +15,7 @@ import (
 )
 
 // NewRouter builds an http.Handler with routes and middleware wired.
-func NewRouter(checkSvc *service.Check, listSvc *service.ListAvailable, st store.Store, tempoClient *tempo.Client) http.Handler {
+func NewRouter(checkSvc *service.Check, spanCheck *service.SpanCheck, listSvc *service.ListAvailable, st store.Store, tempoClient *tempo.Client) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/healthz", handlers.Healthz)
@@ -54,7 +54,7 @@ func NewRouter(checkSvc *service.Check, listSvc *service.ListAvailable, st store
 
 	mux.HandleFunc("/v1/traces/", func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
-		
+
 		// Check if it's a child spans request (POST /v1/traces/child-spans)
 		if path == "/v1/traces/child-spans" {
 			if r.Method != http.MethodPost {
@@ -64,19 +64,29 @@ func NewRouter(checkSvc *service.Check, listSvc *service.ListAvailable, st store
 			handlers.TraceChildSpans(tempoClient).ServeHTTP(w, r)
 			return
 		}
-		
+
+		// Check if it's a child span anomalies request (POST /v1/traces/child-span-anomalies)
+		if path == "/v1/traces/child-span-anomalies" {
+			if r.Method != http.MethodPost {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			handlers.TraceChildSpanAnomalies(tempoClient, spanCheck).ServeHTTP(w, r)
+			return
+		}
+
 		// All other /v1/traces/* endpoints are GET only
 		if r.Method != http.MethodGet {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		
+
 		// Check if it's a longest span request
 		if strings.HasSuffix(path, "/longest-span") {
 			handlers.TraceLongestSpan(tempoClient).ServeHTTP(w, r)
 			return
 		}
-		
+
 		// If no match, return 404
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]string{"error": "endpoint not found"})

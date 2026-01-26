@@ -329,6 +329,146 @@
                 }
             }
         },
+        "/v1/traces/child-span-anomalies": {
+            "post": {
+                "description": "Evaluate anomalies for direct child spans under a parent span in a trace",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Traces"
+                ],
+                "summary": "Get child span anomalies for a parent span",
+                "parameters": [
+                    {
+                        "description": "Trace and optional parent span ID",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TraceChildSpanAnomaliesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ChildSpanAnomaliesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Trace or span not found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Trace has no spans",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Tempo error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Tempo not available",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "504": {
+                        "description": "Tempo timeout",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/traces/child-spans": {
+            "post": {
+                "description": "Retrieve all child spans for a given span ID within a trace",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Traces"
+                ],
+                "summary": "Get child spans of a specific span",
+                "parameters": [
+                    {
+                        "description": "Trace and Span IDs",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TraceChildSpansRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ChildSpansResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Trace or span not found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Trace has no spans",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Tempo error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Tempo not available",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "504": {
+                        "description": "Tempo timeout",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/traces/{traceId}/longest-span": {
             "get": {
                 "description": "Retrieve the longest span detail for a given trace ID",
@@ -535,6 +675,104 @@
                 }
             }
         },
+        "domain.ChildSpanAnomaliesResponse": {
+            "type": "object",
+            "properties": {
+                "anomalyCount": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "childCount": {
+                    "type": "integer",
+                    "example": 7
+                },
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.ChildSpanAnomaly"
+                    }
+                },
+                "computedAt": {
+                    "type": "string",
+                    "example": "2026-01-20T10:12:35.001Z"
+                },
+                "parentSpan": {
+                    "$ref": "#/definitions/domain.SpanSummary"
+                },
+                "traceId": {
+                    "type": "string",
+                    "example": "abc123def456"
+                }
+            }
+        },
+        "domain.ChildSpanAnomaly": {
+            "type": "object",
+            "properties": {
+                "baseline": {
+                    "$ref": "#/definitions/domain.BaselineStats"
+                },
+                "baselineSource": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/domain.BaselineSource"
+                        }
+                    ],
+                    "example": "exact"
+                },
+                "bucket": {
+                    "$ref": "#/definitions/domain.TimeBucket"
+                },
+                "cannotDetermine": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "explanation": {
+                    "type": "string",
+                    "example": "duration 5ms within threshold 2.00ms"
+                },
+                "fallbackLevel": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "isAnomaly": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "sourceDetails": {
+                    "type": "string",
+                    "example": "exact match: 9|weekday"
+                },
+                "span": {
+                    "$ref": "#/definitions/domain.SpanSummary"
+                }
+            }
+        },
+        "domain.ChildSpansResponse": {
+            "type": "object",
+            "properties": {
+                "childCount": {
+                    "type": "integer",
+                    "example": 7
+                },
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.SpanSummary"
+                    }
+                },
+                "computedAt": {
+                    "type": "string",
+                    "example": "2026-01-20T10:12:35.001Z"
+                },
+                "parentSpan": {
+                    "$ref": "#/definitions/domain.SpanSummary"
+                },
+                "traceId": {
+                    "type": "string",
+                    "example": "abc123def456"
+                }
+            }
+        },
         "domain.ErrorDetail": {
             "type": "object",
             "properties": {
@@ -718,6 +956,32 @@
                 "status": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "handlers.TraceChildSpanAnomaliesRequest": {
+            "type": "object",
+            "properties": {
+                "parentSpanId": {
+                    "type": "string",
+                    "example": "xyz789"
+                },
+                "traceId": {
+                    "type": "string",
+                    "example": "abc123def456"
+                }
+            }
+        },
+        "handlers.TraceChildSpansRequest": {
+            "type": "object",
+            "properties": {
+                "spanId": {
+                    "type": "string",
+                    "example": "xyz789"
+                },
+                "traceId": {
+                    "type": "string",
+                    "example": "abc123def456"
                 }
             }
         },
