@@ -38,7 +38,7 @@ WORKDIR /app
 
 # Default config path; allow override via volume/env
 COPY --from=builder /out/tempo-anomaly /app/tempo-anomaly
-COPY --from=builder /src/configs/config.example.yaml /config/config.yaml
+COPY --from=builder /src/configs/config.dev.yaml /config/config.yaml
 
 EXPOSE 8080
 
