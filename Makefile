@@ -1,9 +1,9 @@
 # Remote deployment settings
 REMOTE_HOST ?= 192.168.4.208
 REMOTE_USER ?= root
-REMOTE_PATH ?= /root/tempo-anomaly
+REMOTE_PATH ?= /root/test
 REMOTE_IMAGE_PATH ?= $(REMOTE_PATH)/images
-REMOTE_COMPOSE_DIR ?= $(REMOTE_PATH)
+REMOTE_COMPOSE_DIR ?= $(REMOTE_PATH)/tempo-anomaly
 REMOTE_SERVICE_NAME ?= anomaly-service
 ARCH ?= amd64
 PLATFORM ?= linux/$(ARCH)
@@ -147,7 +147,7 @@ dev-restart:
 # Build and save Docker image as tar file
 image-save:
 	@echo "Building Docker image for $(PLATFORM)..."
-	docker buildx build --platform=$(PLATFORM) --load -t tempo-anomaly-service:$(ARCH) -f docker/Dockerfile .
+	docker buildx build --platform=$(PLATFORM) --load -t tempo-anomaly-service:latest -f docker/Dockerfile .
 	@echo "Saving Docker image as tar file..."
 	docker save tempo-anomaly-service:$(ARCH) -o tempo-anomaly-service-$(ARCH).tar
 	@echo "✓ Image saved: tempo-anomaly-service-$(ARCH).tar"
@@ -183,7 +183,7 @@ deploy-full: deploy-image deploy-compose
 	@echo "Waiting for services to start..."
 	@sleep 10
 	@echo "Checking service health..."
-	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "curl -s http://localhost:8081/healthz" && echo "✓ Service is healthy!" || echo "⚠ Service health check failed"
+	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "curl -s http://localhost:3201/healthz" && echo "✓ Service is healthy!" || echo "⚠ Service health check failed"
 	@echo ""
 	@echo "✓ Full deployment completed successfully!"
 	@echo "  - Host: $(REMOTE_USER)@$(REMOTE_HOST)"
