@@ -149,7 +149,7 @@ image-save:
 	@echo "Building Docker image for $(PLATFORM)..."
 	docker buildx build --platform=$(PLATFORM) --load -t tempo-anomaly-service:latest -f docker/Dockerfile .
 	@echo "Saving Docker image as tar file..."
-	docker save tempo-anomaly-service:$(ARCH) -o tempo-anomaly-service-$(ARCH).tar
+	docker save tempo-anomaly-service:latest -o tempo-anomaly-service-$(ARCH).tar
 	@echo "✓ Image saved: tempo-anomaly-service-$(ARCH).tar"
 
 # Deploy Docker image to remote server
@@ -170,7 +170,7 @@ deploy-compose:
 	@echo "Creating remote directory..."
 	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "mkdir -p $(REMOTE_COMPOSE_DIR)"
 	@echo "Uploading docker-compose.yml..."
-	@echo "put docker/compose.yml $(REMOTE_COMPOSE_DIR)/docker-compose.yml" | sftp $(REMOTE_USER)@$(REMOTE_HOST)
+	@echo "put docker/docker-compose-deploy.yml $(REMOTE_COMPOSE_DIR)/docker-compose.yml" | sftp $(REMOTE_USER)@$(REMOTE_HOST)
 	@echo "Uploading configs..."
 	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "mkdir -p $(REMOTE_COMPOSE_DIR)/configs"
 	@echo "put configs/*.yaml $(REMOTE_COMPOSE_DIR)/configs/" | sftp $(REMOTE_USER)@$(REMOTE_HOST)
