@@ -1,5 +1,6 @@
 # Remote deployment settings
 REMOTE_HOST ?= 192.168.4.208
+REMOTE_PORT ?= 3202
 REMOTE_USER ?= root
 REMOTE_PATH ?= /root/test
 REMOTE_IMAGE_PATH ?= $(REMOTE_PATH)/images
@@ -7,6 +8,11 @@ REMOTE_COMPOSE_DIR ?= $(REMOTE_PATH)/tempo-anomaly
 REMOTE_SERVICE_NAME ?= anomaly-service
 ARCH ?= amd64
 PLATFORM ?= linux/$(ARCH)
+
+# Swagger (override with: make deploy-full SWAGGER_HOST=...)
+SWAGGER_HOST ?= $(REMOTE_HOST):$(REMOTE_PORT)
+SWAGGER_SCHEMES ?= http,https
+SWAGGER_BASE_PATH ?= /
 
 .PHONY: help test test-coverage test-short test-verbose clean build docker-build docker-up docker-down run dev-up dev-down dev-restart swagger \
 	image-save deploy-image deploy-compose deploy-full
@@ -179,7 +185,9 @@ deploy-compose:
 # Full deployment: image + compose + restart services
 deploy-full: deploy-image deploy-compose
 	@echo "Restarting services on remote host..."
-	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_COMPOSE_DIR) && docker compose down && docker compose up -d"
+	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_COMPOSE_DIR) && \
+SWAGGER_HOST='$(SWAGGER_HOST)' SWAGGER_SCHEMES='$(SWAGGER_SCHEMES)' SWAGGER_BASE_PATH='$(SWAGGER_BASE_PATH)' docker compose down && \
+SWAGGER_HOST='$(SWAGGER_HOST)' SWAGGER_SCHEMES='$(SWAGGER_SCHEMES)' SWAGGER_BASE_PATH='$(SWAGGER_BASE_PATH)' docker compose up -d"
 	@echo "Waiting for services to start..."
 	@sleep 10
 	@echo "Checking service health..."

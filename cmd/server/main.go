@@ -6,8 +6,10 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
+	docs "github.com/alexchang/tempo-latency-anomaly-service/docs"
 	"github.com/alexchang/tempo-latency-anomaly-service/internal/app"
 	"github.com/alexchang/tempo-latency-anomaly-service/internal/config"
 )
@@ -45,11 +47,42 @@ import (
 // @tag.name Traces
 // @tag.description Trace lookup endpoints
 
+func applySwaggerEnvOverrides() {
+	if docs.SwaggerInfo == nil {
+		return
+	}
+
+	if host := strings.TrimSpace(os.Getenv("SWAGGER_HOST")); host != "" {
+		docs.SwaggerInfo.Host = host
+	}
+
+	if basePath := strings.TrimSpace(os.Getenv("SWAGGER_BASE_PATH")); basePath != "" {
+		docs.SwaggerInfo.BasePath = basePath
+	}
+
+	if schemesRaw := strings.TrimSpace(os.Getenv("SWAGGER_SCHEMES")); schemesRaw != "" {
+		parts := strings.Split(schemesRaw, ",")
+		schemes := make([]string, 0, len(parts))
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if p == "" {
+				continue
+			}
+			schemes = append(schemes, p)
+		}
+		if len(schemes) > 0 {
+			docs.SwaggerInfo.Schemes = schemes
+		}
+	}
+}
+
 func main() {
 	// Config path via flag or env CONFIG_FILE
 	var cfgPath string
 	flag.StringVar(&cfgPath, "config", os.Getenv("CONFIG_FILE"), "path to config yaml")
 	flag.Parse()
+
+	applySwaggerEnvOverrides()
 
 	cfg, err := config.Load(cfgPath)
 	if err != nil {

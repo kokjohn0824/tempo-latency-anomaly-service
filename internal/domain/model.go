@@ -10,6 +10,9 @@ type TraceEvent struct {
 	RootTraceName     string `json:"rootTraceName" example:"GET /api/users"`
 	StartTimeUnixNano string `json:"startTimeUnixNano" example:"1673000000000000000"`
 	DurationMs        int64  `json:"durationMs" example:"250"`
+	// IsAnomaly indicates whether this trace duration is anomalous for the given
+	// (service, endpoint) baseline at the trace start time bucket.
+	IsAnomaly bool `json:"isAnomaly" example:"false"`
 }
 
 // TraceLookupResponse returns traces matching a Tempo search.

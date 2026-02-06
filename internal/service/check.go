@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/alexchang/tempo-latency-anomaly-service/internal/config"
 	"github.com/alexchang/tempo-latency-anomaly-service/internal/domain"
@@ -75,6 +76,73 @@ func (s *Check) Evaluate(ctx context.Context, req domain.AnomalyCheckRequest) (d
 	resp.IsAnomaly = eval.IsAnomaly
 	resp.Explanation = eval.Explanation
 	return resp, nil
+}
+
+// AnnotateTraces adds IsAnomaly to each TraceEvent using time-bucketed baselines.
+// It batches baseline lookups per unique (service|endpoint|hour|dayType) bucket to reduce store calls.
+//
+// Note: baseline keys are derived from each trace's RootServiceName/RootTraceName
+// (the same pair used during ingestion to build baselines).
+func (s *Check) AnnotateTraces(ctx context.Context, traces []domain.TraceEvent) ([]domain.TraceEvent, error) {
+	if s == nil || s.store == nil || s.cfg == nil || s.baselineLookup == nil {
+		return nil, fmt.Errorf("check service not initialized")
+	}
+
+	// Copy to avoid mutating caller slice.
+	out := make([]domain.TraceEvent, len(traces))
+	copy(out, traces)
+
+	// Cache baseline results by key "service|endpoint|hour|dayType".
+	cache := make(map[string]*BaselineResult, 16)
+
+	for i := range out {
+		// Use trace's own root identifiers to match ingestion baseline keys.
+		svc := out[i].RootServiceName
+		ep := out[i].RootTraceName
+		if svc == "" || ep == "" {
+			out[i].IsAnomaly = false
+			continue
+		}
+
+		tsStr := out[i].StartTimeUnixNano
+		tsNano, err := strconv.ParseInt(tsStr, 10, 64)
+		if err != nil || tsNano <= 0 {
+			out[i].IsAnomaly = false
+			continue
+		}
+
+		bucket, err := domain.ParseTimeBucket(fmt.Sprintf("%d", tsNano), s.cfg.Timezone)
+		if err != nil {
+			out[i].IsAnomaly = false
+			continue
+		}
+
+		bucketKey := fmt.Sprintf("%s|%s|%d|%s", svc, ep, bucket.Hour, bucket.DayType)
+		res, ok := cache[bucketKey]
+		if !ok {
+			res, err = s.baselineLookup.LookupWithFallback(ctx, svc, ep, bucket)
+			if err != nil {
+				return nil, fmt.Errorf("lookup baseline: %w", err)
+			}
+			cache[bucketKey] = res
+		}
+
+		var b *store.Baseline
+		if res != nil {
+			b = res.Baseline
+		}
+
+		// If baseline is missing or insufficient, don't flag anomalies.
+		if b == nil || b.SampleCount < s.cfg.Stats.MinSamples {
+			out[i].IsAnomaly = false
+			continue
+		}
+
+		eval := EvaluateDuration(s.cfg, out[i].DurationMs, b)
+		out[i].IsAnomaly = eval.IsAnomaly
+	}
+
+	return out, nil
 }
 
 func valueOrZero[T any, R any](v *T, f func(*T) R) R {

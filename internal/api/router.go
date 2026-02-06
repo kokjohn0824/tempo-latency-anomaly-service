@@ -49,7 +49,15 @@ func NewRouter(checkSvc *service.Check, spanCheck *service.SpanCheck, listSvc *s
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		handlers.TraceLookup(tempoClient).ServeHTTP(w, r)
+		handlers.TraceLookup(tempoClient, checkSvc).ServeHTTP(w, r)
+	})
+
+	mux.HandleFunc("/v1/traces/anomalies", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		handlers.TraceLookupAnomalies(tempoClient, checkSvc).ServeHTTP(w, r)
 	})
 
 	mux.HandleFunc("/v1/traces/", func(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +102,7 @@ func NewRouter(checkSvc *service.Check, spanCheck *service.SpanCheck, listSvc *s
 
 	// Swagger UI endpoint
 	mux.HandleFunc("/swagger/", httpSwagger.Handler(
-		httpSwagger.URL("/swagger/doc.json"),
+		httpSwagger.URL("doc.json"),
 	))
 
 	h := recoverMiddleware(requestIDMiddleware(loggingMiddleware(mux)))
